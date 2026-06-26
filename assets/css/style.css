@@ -1,0 +1,32 @@
+/* File ini untuk override atau tambahan style jika Bootstrap kurang pas */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+    padding: 10px;
+}
+
+/* Styling khusus untuk tampilan Mobile (Petugas lapangan) */
+@media (max-width: 576px) {
+    .card-body {
+        padding: 1.5rem !important;
+    }
+}
+
+/* Class untuk status tagihan */
+.status-unpaid {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.status-paid {
+    color: #198754;
+    font-weight: bold;
+}
