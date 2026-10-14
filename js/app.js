@@ -1,59 +1,306 @@
-// ==================== ROUTING MODULAR ====================
-// Fungsi untuk memuat halaman dari folder 'pages'
-async function loadPage(pageName) {
-    const container = document.getElementById('page-container');
-    const titleElement = document.getElementById('page-title');
+// ==================== DATABASE USER (MOCK - Nanti diganti Supabase) ====================
+const USERS_DB = [
+    { id: 1, nama: 'Administrator', username: 'admin', password: 'admin123', role: 'admin' },
+    { id: 2, nama: 'Pak Ketua', username: 'ketua', password: 'ketua123', role: 'ketua' },
+    { id: 3, nama: 'Bu Sekretaris', username: 'sekretaris', password: 'sekretaris123', role: 'sekretaris' },
+    { id: 4, nama: 'Bu Bendahara', username: 'bendahara', password: 'bendahara123', role: 'bendahara' },
+    { id: 5, nama: 'Pak Petugas 1', username: 'petugas1', password: 'petugas123', role: 'petugas', zona: 'Zona 1 - Pusat' }
+];
+
+// ==================== DEFINISI MENU PER ROLE ====================
+const MENU_BY_ROLE = {
+    admin: [
+        { label: 'Beranda', icon: 'fa-home', page: 'dashboard' },
+        { 
+            label: 'ADMINISTRASI', icon: 'fa-user-shield', 
+            children: [
+                { label: 'Manajemen Pengguna', page: 'manajemen-user' }
+            ]
+        },
+        { label: 'Laporan Keuangan', icon: 'fa-chart-line', page: 'laporan-keuangan' }
+    ],
+    ketua: [
+        { label: 'Dashboard', icon: 'fa-tachometer-alt', page: 'dashboard' },
+        { label: 'Laporan Pemakaian', icon: 'fa-chart-bar', page: 'laporan-pemakaian' },
+        { label: 'Laporan Keuangan', icon: 'fa-chart-line', page: 'laporan-keuangan' }
+    ],
+    sekretaris: [
+        { label: 'Dashboard', icon: 'fa-home', page: 'dashboard' },
+        { 
+            label: 'DATA MASTER', icon: 'fa-database', 
+            children: [
+                { label: 'Data Pelanggan', page: 'data-pelanggan' },
+                { label: 'Data Zona/Wilayah', page: 'data-zona' },
+                { label: 'Tarif Air', page: 'tarif-air' }
+            ]
+        },
+        { 
+            label: 'MANAJEMEN', icon: 'fa-user-hard-hat', 
+            children: [
+                { label: 'Manajemen Petugas', page: 'manajemen-petugas' }
+            ]
+        },
+        { label: 'Pengaduan', icon: 'fa-comment-dots', page: 'pengaduan' }
+    ],
+    bendahara: [
+        { label: 'Dashboard', icon: 'fa-home', page: 'dashboard' },
+        { 
+            label: 'TRANSAKSI', icon: 'fa-exchange-alt', 
+            children: [
+                { label: 'Generate Tagihan', page: 'generate-tagihan' },
+                { label: 'Pembayaran', page: 'pembayaran' },
+                { label: 'Riwayat Transaksi', page: 'riwayat-transaksi' }
+            ]
+        },
+        { label: 'Laporan Keuangan', icon: 'fa-chart-line', page: 'laporan-keuangan' }
+    ],
+    petugas: [
+        { label: 'Dashboard', icon: 'fa-home', page: 'dashboard' },
+        { label: 'Pencatatan Meter', icon: 'fa-tachometer-alt', page: 'pencatatan-meter' },
+        { label: 'Riwayat Input', icon: 'fa-history', page: 'riwayat-input' }
+    ]
+};
+
+// ==================== INISIALISASI APLIKASI ====================
+document.addEventListener('DOMContentLoaded', () => {
+    const session = getSession();
     
-    // Tampilkan loading
-    container.innerHTML = '<div style="text-align:center; padding:50px; color:#7f8c8d;"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Memuat halaman...</p></div>';
+    if (session) {
+        // Sudah login → tampilkan aplikasi
+        initApp(session);
+    } else {
+        // Belum login → tampilkan halaman login
+        loadPage('login', true);
+    }
+});
 
-    try {
-        // Fetch file HTML dari folder pages
-        const response = await fetch(`pages/${pageName}.html`);
+// ==================== FUNGSI LOGIN ====================
+function handleLogin(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const errorDiv = document.getElementById('loginError');
+    
+    const user = USERS_DB.find(u => u.username === username && u.password === password);
+    
+    if (user) {
+        // Simpan session
+        const session = {
+            id: user.id,
+            nama: user.nama,
+            username: user.username,
+            role: user.role,
+            zona: user.zona || null
+        };
+        localStorage.setItem('sipams_session', JSON.stringify(session));
         
-        if (!response.ok) throw new Error('Halaman tidak ditemukan');
-        
-        const html = await response.text();
-        container.innerHTML = html;
-        
-        // Update judul di topbar
-        const pageTitle = pageName.replace(/-/g, ' ').toUpperCase();
-        titleElement.innerText = pageTitle;
-
-        // Update status active di sidebar
-        document.querySelectorAll('.menu-link, .submenu-item').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('data-page') === pageName) {
-                link.classList.add('active');
-            }
-        });
-
-    } catch (error) {
-        container.innerHTML = `<div class="content-card"><h3>Error 404</h3><p>Halaman <strong>${pageName}.html</strong> tidak ditemukan di folder pages/.</p></div>`;
+        // Redirect ke aplikasi
+        initApp(session);
+    } else {
+        errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Username atau password salah!';
+        errorDiv.style.display = 'block';
     }
 }
 
-// Event Listener untuk semua link menu
-document.addEventListener('DOMContentLoaded', () => {
-    // Load dashboard secara default saat pertama kali dibuka
-    loadPage('dashboard');
+// ==================== FUNGSI LOGOUT ====================
+function logout() {
+    if (confirm('Yakin ingin keluar dari aplikasi?')) {
+        localStorage.removeItem('sipams_session');
+        location.reload(); // Reload → akan redirect ke login
+    }
+}
 
-    // Tangani klik pada menu
+// ==================== INISIALISASI APLIKASI SETELAH LOGIN ====================
+function initApp(session) {
+    // Update info user di sidebar
+    document.getElementById('currentUser').innerText = session.nama;
+    document.getElementById('currentRole').innerText = session.role.toUpperCase();
+    document.getElementById('currentRole').className = `role-badge role-${session.role}`;
+    
+    // Render menu sesuai role
+    renderSidebarMenu(session.role);
+    
+    // Load dashboard sebagai halaman awal
+    loadPage('dashboard');
+}
+
+// ==================== RENDER SIDEBAR DINAMIS ====================
+function renderSidebarMenu(role) {
+    const menuContainer = document.getElementById('dynamic-sidebar-menu');
+    const menuData = MENU_BY_ROLE[role] || [];
+    
+    let html = '';
+    
+    menuData.forEach((item, index) => {
+        if (item.children) {
+            // Menu dengan submenu
+            const submenuId = `submenu-${index}`;
+            html += `
+                <div class="menu-section">
+                    <a href="#" class="menu-link" onclick="toggleSubmenu('${submenuId}')">
+                        <i class="fas ${item.icon}"></i>
+                        <span>${item.label}</span>
+                        <i class="fas fa-chevron-down arrow" id="arrow-${submenuId}"></i>
+                    </a>
+                    <div class="submenu collapsed" id="${submenuId}">
+                        ${item.children.map(child => `
+                            <a href="#" class="submenu-item" data-page="${child.page}">${child.label}</a>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            // Menu tanpa submenu
+            html += `
+                <div class="menu-section">
+                    <a href="#" class="menu-link" data-page="${item.page}">
+                        <i class="fas ${item.icon}"></i>
+                        <span>${item.label}</span>
+                    </a>
+                </div>
+            `;
+        }
+    });
+    
+    menuContainer.innerHTML = html;
+    
+    // Re-attach event listener untuk link menu
+    attachMenuListeners();
+}
+
+function attachMenuListeners() {
     document.querySelectorAll('[data-page]').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const page = link.getAttribute('data-page');
             loadPage(page);
             
-            // Tutup sidebar di mobile setelah klik
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').classList.remove('show');
             }
         });
     });
-});
+}
 
-// ==================== TOGGLE SIDEBAR & SUBMENU ====================
+// ==================== ROUTING HALAMAN ====================
+async function loadPage(pageName, isLogin = false) {
+    const container = document.getElementById('page-container');
+    const titleElement = document.getElementById('page-title');
+    
+    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Memuat...</p></div>';
+
+    try {
+        const response = await fetch(`pages/${pageName}.html`);
+        if (!response.ok) throw new Error('Halaman tidak ditemukan');
+        
+        const html = await response.text();
+        container.innerHTML = html;
+        
+        // Update judul
+        if (!isLogin) {
+            const pageTitle = pageName.replace(/-/g, ' ').toUpperCase();
+            titleElement.innerText = pageTitle;
+        } else {
+            titleElement.innerText = 'Login';
+        }
+        
+        // Update active state
+        document.querySelectorAll('.menu-link, .submenu-item').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-page') === pageName) {
+                link.classList.add('active');
+            }
+        });
+        
+        // Attach event handler khusus halaman
+        attachPageHandlers(pageName);
+        
+    } catch (error) {
+        container.innerHTML = `<div class="content-card"><h3>Error 404</h3><p>Halaman <strong>${pageName}.html</strong> tidak ditemukan.</p></div>`;
+    }
+}
+
+// ==================== HANDLER KHUSUS HALAMAN ====================
+function attachPageHandlers(pageName) {
+    if (pageName === 'login') {
+        const form = document.getElementById('formLogin');
+        if (form) form.addEventListener('submit', handleLogin);
+    }
+    
+    if (pageName === 'manajemen-user') {
+        const form = document.getElementById('formTambahUser');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                alert('✅ User berhasil ditambahkan! (Simulasi - nanti pakai Supabase)');
+                renderDaftarUser();
+                form.reset();
+            });
+        }
+        renderDaftarUser();
+    }
+    
+    if (pageName === 'manajemen-petugas') {
+        const form = document.getElementById('formTambahPetugas');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                alert('✅ Petugas berhasil ditambahkan! (Simulasi - nanti pakai Supabase)');
+                renderDaftarPetugas();
+                form.reset();
+            });
+        }
+        renderDaftarPetugas();
+    }
+}
+
+function renderDaftarUser() {
+    const container = document.getElementById('daftarUser');
+    if (!container) return;
+    
+    const users = USERS_DB.filter(u => ['ketua', 'sekretaris', 'bendahara'].includes(u.role));
+    
+    container.innerHTML = users.map(u => `
+        <div class="user-item">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <div>
+                    <strong>${u.nama}</strong>
+                    <div class="user-meta">@${u.username} • <span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span></div>
+                </div>
+            </div>
+            <button class="btn-icon" onclick="alert('Fitur edit/hapus akan ditambahkan')"><i class="fas fa-ellipsis-v"></i></button>
+        </div>
+    `).join('');
+}
+
+function renderDaftarPetugas() {
+    const container = document.getElementById('daftarPetugas');
+    if (!container) return;
+    
+    const petugas = USERS_DB.filter(u => u.role === 'petugas');
+    
+    container.innerHTML = petugas.map(p => `
+        <div class="user-item">
+            <div class="user-info">
+                <i class="fas fa-user-hard-hat"></i>
+                <div>
+                    <strong>${p.nama}</strong>
+                    <div class="user-meta">@${p.username} • ${p.zona || 'Belum ada zona'}</div>
+                </div>
+            </div>
+            <button class="btn-icon"><i class="fas fa-ellipsis-v"></i></button>
+        </div>
+    `).join('');
+}
+
+// ==================== UTILITIES ====================
+function getSession() {
+    const data = localStorage.getItem('sipams_session');
+    return data ? JSON.parse(data) : null;
+}
+
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('show');
 }
@@ -62,12 +309,16 @@ function toggleSubmenu(menuId) {
     const submenu = document.getElementById(menuId);
     const arrow = document.getElementById('arrow-' + menuId);
     const menuLink = arrow.parentElement;
-    
     submenu.classList.toggle('collapsed');
     menuLink.classList.toggle('collapsed');
 }
 
 // ==================== MODAL CEK TAGIHAN PUBLIK ====================
+const dataPelanggan = [
+    { nomor: 'PLG-001', nama: 'Budi Santoso', alamat: 'Jl. Melati No. 12', pemakaian: 15, total: 75000, status: 'Belum Lunas' },
+    { nomor: 'PLG-002', nama: 'Siti Aminah', alamat: 'Jl. Mawar No. 5', pemakaian: 10, total: 50000, status: 'Lunas' }
+];
+
 function openPublicCheck() {
     document.getElementById('publicModal').classList.add('show');
     document.getElementById('searchPelanggan').focus();
@@ -78,12 +329,6 @@ function closePublicCheck() {
     document.getElementById('hasilPencarian').innerHTML = '';
     document.getElementById('searchPelanggan').value = '';
 }
-
-// Data Dummy Pelanggan
-const dataPelanggan = [
-    { nomor: 'PLG-001', nama: 'Budi Santoso', alamat: 'Jl. Melati No. 12', pemakaian: 15, total: 75000, status: 'Belum Lunas' },
-    { nomor: 'PLG-002', nama: 'Siti Aminah', alamat: 'Jl. Mawar No. 5', pemakaian: 10, total: 50000, status: 'Lunas' }
-];
 
 function cariTagihan() {
     const keyword = document.getElementById('searchPelanggan').value.toLowerCase().trim();
@@ -110,7 +355,6 @@ function cariTagihan() {
     }
 }
 
-// Tutup modal jika klik di luar area
 document.getElementById('publicModal').addEventListener('click', function(e) {
     if (e.target === this) closePublicCheck();
 });
