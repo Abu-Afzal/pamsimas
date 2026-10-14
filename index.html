@@ -5,18 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SiPAMS - PAMSIMAS Digital</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <!-- Sidebar -->
+    <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-tint"></i> SiPAMS</h3>
             <p>PAMSIMAS Digital</p>
         </div>
 
-        <!-- Info Box -->
         <div class="info-box">
             <div class="label">Tahun</div>
             <div class="value">2026/2027</div>
@@ -26,126 +25,51 @@
             <div class="value">1 (Ganjil)</div>
         </div>
 
-        <!-- Menu Container -->
         <div class="menu-container">
-            
-            <!-- Menu: Beranda -->
             <div class="menu-section">
-                <a href="#" class="menu-link active">
-                    <i class="fas fa-home"></i>
-                    <span>Beranda</span>
+                <a href="#" class="menu-link active" data-page="dashboard">
+                    <i class="fas fa-home"></i><span>Beranda</span>
                 </a>
             </div>
 
-            <!-- Menu: Peta Situs -->
             <div class="menu-section">
-                <a href="#" class="menu-link">
-                    <i class="fas fa-map"></i>
-                    <span>Peta Situs</span>
+                <a href="#" class="menu-link" onclick="toggleSubmenu('master')">
+                    <i class="fas fa-database"></i><span>DATA MASTER</span>
+                    <i class="fas fa-chevron-down arrow" id="arrow-master"></i>
                 </a>
-            </div>
-
-            <!-- Menu: DASHBOARD -->
-            <div class="menu-section">
-                <a href="#" class="menu-link" onclick="toggleSubmenu('dashboard')">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>DASHBOARD</span>
-                    <i class="fas fa-chevron-down arrow" id="arrow-dashboard"></i>
-                </a>
-                <div class="submenu" id="dashboard">
-                    <a href="#" class="submenu-item">Dashboard Utama</a>
-                </div>
-            </div>
-
-            <!-- Menu: DATA MASTER -->
-            <div class="menu-section">
-                <a href="#" class="menu-link" onclick="toggleSubmenu('datamaster')">
-                    <i class="fas fa-database"></i>
-                    <span>DATA MASTER</span>
-                    <i class="fas fa-chevron-down arrow" id="arrow-datamaster"></i>
-                </a>
-                <div class="submenu collapsed" id="datamaster">
-                    <a href="#" class="submenu-item">Data Pelanggan</a>
+                <div class="submenu" id="master">
+                    <a href="#" class="submenu-item" data-page="data-pelanggan">Data Pelanggan</a>
                     <a href="#" class="submenu-item">Data Zona/Wilayah</a>
-                    <a href="#" class="submenu-item">Data Meter Air</a>
                     <a href="#" class="submenu-item">Tarif Air</a>
                 </div>
             </div>
 
-            <!-- Menu: TRANSAKSI -->
             <div class="menu-section">
                 <a href="#" class="menu-link" onclick="toggleSubmenu('transaksi')">
-                    <i class="fas fa-exchange-alt"></i>
-                    <span>TRANSAKSI</span>
+                    <i class="fas fa-exchange-alt"></i><span>TRANSAKSI</span>
                     <i class="fas fa-chevron-down arrow" id="arrow-transaksi"></i>
                 </a>
                 <div class="submenu collapsed" id="transaksi">
-                    <a href="#" class="submenu-item">Pencatatan Meter</a>
+                    <a href="#" class="submenu-item" data-page="pencatatan-meter">Pencatatan Meter</a>
                     <a href="#" class="submenu-item">Generate Tagihan</a>
                     <a href="#" class="submenu-item">Pembayaran</a>
-                    <a href="#" class="submenu-item">Riwayat Transaksi</a>
                 </div>
             </div>
-
-            <!-- Menu: LAPORAN -->
-            <div class="menu-section">
-                <a href="#" class="menu-link" onclick="toggleSubmenu('laporan')">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>LAPORAN</span>
-                    <i class="fas fa-chevron-down arrow" id="arrow-laporan"></i>
-                </a>
-                <div class="submenu collapsed" id="laporan">
-                    <a href="#" class="submenu-item">Laporan Pemakaian Air</a>
-                    <a href="#" class="submenu-item">Laporan Keuangan</a>
-                    <a href="#" class="submenu-item">Laporan Pelanggan</a>
-                    <a href="#" class="submenu-item">Laporan Harian/Bulanan</a>
-                </div>
-            </div>
-
-            <!-- Menu: ADMINISTRASI -->
-            <div class="menu-section">
-                <a href="#" class="menu-link" onclick="toggleSubmenu('admin')">
-                    <i class="fas fa-cog"></i>
-                    <span>ADMINISTRASI</span>
-                    <i class="fas fa-chevron-down arrow" id="arrow-admin"></i>
-                </a>
-                <div class="submenu collapsed" id="admin">
-                    <a href="#" class="submenu-item">Manajemen Pengguna</a>
-                    <a href="#" class="submenu-item">Pengaturan Sistem</a>
-                    <a href="#" class="submenu-item">Backup Data</a>
-                </div>
-            </div>
-
-            <!-- Menu: REFERENSI -->
-            <div class="menu-section">
-                <a href="#" class="menu-link" onclick="toggleSubmenu('referensi')">
-                    <i class="fas fa-book"></i>
-                    <span>REFERENSI</span>
-                    <i class="fas fa-chevron-down arrow" id="arrow-referensi"></i>
-                </a>
-                <div class="submenu collapsed" id="referensi">
-                    <a href="#" class="submenu-item">Peraturan & Ketentuan</a>
-                    <a href="#" class="submenu-item">Panduan Penggunaan</a>
-                </div>
-            </div>
-
         </div>
 
-        <!-- Footer -->
         <div class="sidebar-footer">
-            ©2026 SiPAMS - PAMSIMAS Digital<br>
-            Air Mengalir, Laporan Pun Mengalir
+            ©2026 SiPAMS<br>Air Mengalir, Laporan Mengalir
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- MAIN CONTENT -->
     <div class="main-content" id="mainContent">
         <div class="topbar">
             <button class="toggle-sidebar" onclick="toggleSidebar()">
                 <i class="fas fa-bars"></i>
             </button>
             <div class="topbar-title">
-                <h2>Selamat Datang di SiPAMS</h2>
+                <h2 id="page-title">Selamat Datang di SiPAMS</h2>
                 <p>Sistem Informasi PAMSIMAS Digital</p>
             </div>
             <button class="btn-public" onclick="openPublicCheck()">
@@ -153,63 +77,13 @@
             </button>
         </div>
 
-        <div class="content-card">
-            <h3>Dashboard</h3>
-            <p>Ini adalah halaman utama aplikasi SiPAMS. Pilih menu di sidebar untuk memulai.</p>
-            
-            <div class="stats-grid">
-                <div class="stat-card stat-green">
-                    <i class="fas fa-users"></i>
-                    <h4>Total Pelanggan</h4>
-                    <p class="stat-value">150</p>
-                </div>
-                <div class="stat-card stat-blue">
-                    <i class="fas fa-tint"></i>
-                    <h4>Pemakaian Bulan Ini</h4>
-                    <p class="stat-value">1,250 m³</p>
-                </div>
-                <div class="stat-card stat-orange">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <h4>Pendapatan</h4>
-                    <p class="stat-value">Rp 7.5jt</p>
-                </div>
-                <div class="stat-card stat-red">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h4>Total Tunggakan</h4>
-                    <p class="stat-value">Rp 1.2jt</p>
-                </div>
-            </div>
-
-            <!-- Info Peran -->
-            <div class="role-info">
-                <h4>👥 Peran Pengurus dalam Aplikasi</h4>
-                <div class="role-grid">
-                    <div class="role-card">
-                        <i class="fas fa-user-tie"></i>
-                        <h5>Ketua</h5>
-                        <p>Pengawasan dashboard, persetujuan laporan, audit trail.</p>
-                    </div>
-                    <div class="role-card">
-                        <i class="fas fa-user-edit"></i>
-                        <h5>Sekretaris</h5>
-                        <p>Kelola data master pelanggan, zona, meter, dan pengaduan.</p>
-                    </div>
-                    <div class="role-card">
-                        <i class="fas fa-user-shield"></i>
-                        <h5>Bendahara</h5>
-                        <p>Generate tagihan, verifikasi pembayaran, laporan keuangan.</p>
-                    </div>
-                    <div class="role-card">
-                        <i class="fas fa-user-check"></i>
-                        <h5>Petugas</h5>
-                        <p>Input pencatatan meter + foto bukti di lapangan.</p>
-                    </div>
-                </div>
-            </div>
+        <!-- WADAH DINAMIS UNTUK HALAMAN -->
+        <div id="page-container">
+            <!-- Konten dari folder 'pages' akan dimuat di sini -->
         </div>
     </div>
 
-    <!-- Modal Cek Tagihan Publik -->
+    <!-- MODAL CEK TAGIHAN PUBLIK -->
     <div class="modal-overlay" id="publicModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -217,18 +91,16 @@
                 <button class="modal-close" onclick="closePublicCheck()">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Cari tagihan Anda dengan memasukkan <strong>Nama</strong> atau <strong>Nomor Pelanggan</strong>.</p>
+                <p>Cari tagihan dengan memasukkan <strong>Nama</strong> atau <strong>Nomor Pelanggan</strong>.</p>
                 <div class="search-box">
-                    <input type="text" id="searchPelanggan" placeholder="Masukkan nama atau nomor pelanggan...">
+                    <input type="text" id="searchPelanggan" placeholder="Masukkan nama atau nomor...">
                     <button onclick="cariTagihan()"><i class="fas fa-search"></i> Cari</button>
                 </div>
-                <div id="hasilPencarian" class="hasil-pencarian">
-                    <!-- Hasil akan muncul di sini -->
-                </div>
+                <div id="hasilPencarian" class="hasil-pencarian"></div>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
