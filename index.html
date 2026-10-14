@@ -9,60 +9,50 @@
 </head>
 <body>
 
-    <!-- SIDEBAR -->
+    <!-- ==================== SIDEBAR ==================== -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-tint"></i> SiPAMS</h3>
             <p>PAMSIMAS Digital</p>
         </div>
 
+        <!-- 1. INFO USER YANG LOGIN (Dinamis via JS) -->
+        <div class="info-box user-info-box" id="userInfoBox" style="display: none;">
+            <i class="fas fa-user-circle info-icon"></i>
+            <div class="info-text">
+                <div class="label">Login sebagai</div>
+                <div class="value" id="currentUser">-</div>
+                <div class="role-badge" id="currentRole">-</div>
+            </div>
+        </div>
+
+        <!-- 2. INFO PERIODE & ZONA (Sesuai request Anda) -->
         <div class="info-box">
-    <div class="label">Periode Tagihan</div>
-    <div class="value" id="periode-tagihan">Oktober 2026</div>
-</div>
-<div class="info-box">
-    <div class="label">Zona Aktif</div>
-    <div class="value">Zona 1 - Pusat</div>
-</div>
-
-        <div class="menu-container">
-            <div class="menu-section">
-                <a href="#" class="menu-link active" data-page="dashboard">
-                    <i class="fas fa-home"></i><span>Beranda</span>
-                </a>
+            <i class="fas fa-calendar-alt info-icon"></i>
+            <div class="info-text">
+                <div class="label">Periode Tagihan</div>
+                <div class="value" id="periode-tagihan">-</div>
             </div>
-
-            <div class="menu-section">
-                <a href="#" class="menu-link" onclick="toggleSubmenu('master')">
-                    <i class="fas fa-database"></i><span>DATA MASTER</span>
-                    <i class="fas fa-chevron-down arrow" id="arrow-master"></i>
-                </a>
-                <div class="submenu" id="master">
-                    <a href="#" class="submenu-item" data-page="data-pelanggan">Data Pelanggan</a>
-                    <a href="#" class="submenu-item">Data Zona/Wilayah</a>
-                    <a href="#" class="submenu-item">Tarif Air</a>
-                </div>
+        </div>
+        <div class="info-box">
+            <i class="fas fa-map-marker-alt info-icon"></i>
+            <div class="info-text">
+                <div class="label">Zona Aktif</div>
+                <div class="value" id="zona-aktif">Zona 1 - Pusat</div>
             </div>
+        </div>
 
-            <div class="menu-section">
-                <a href="#" class="menu-link" onclick="toggleSubmenu('transaksi')">
-                    <i class="fas fa-exchange-alt"></i><span>TRANSAKSI</span>
-                    <i class="fas fa-chevron-down arrow" id="arrow-transaksi"></i>
-                </a>
-                <div class="submenu collapsed" id="transaksi">
-                    <a href="#" class="submenu-item" data-page="pencatatan-meter">Pencatatan Meter</a>
-                    <a href="#" class="submenu-item">Generate Tagihan</a>
-                    <a href="#" class="submenu-item">Pembayaran</a>
-                </div>
-            </div>
+        <!-- 3. MENU DINAMIS (Akan di-render oleh JS sesuai Role) -->
+        <div class="menu-container" id="dynamic-sidebar-menu">
+            <!-- Menu akan muncul otomatis setelah login -->
         </div>
 
         <div class="sidebar-footer">
             ©2026 SiPAMS<br>Air Mengalir, Laporan Mengalir
-        </div>
+        </div
     </div>
 
-    <!-- MAIN CONTENT -->
+    <!-- ==================== MAIN CONTENT ==================== -->
     <div class="main-content" id="mainContent">
         <div class="topbar">
             <button class="toggle-sidebar" onclick="toggleSidebar()">
@@ -72,9 +62,16 @@
                 <h2 id="page-title">Selamat Datang di SiPAMS</h2>
                 <p>Sistem Informasi PAMSIMAS Digital</p>
             </div>
-            <button class="btn-public" onclick="openPublicCheck()">
-                <i class="fas fa-search"></i> Cek Tagihan Publik
-            </button>
+            
+            <!-- Tombol Aksi di Topbar -->
+            <div class="topbar-actions" id="topbarActions" style="display: none;">
+                <button class="btn-public" onclick="openPublicCheck()">
+                    <i class="fas fa-search"></i> Cek Tagihan
+                </button>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Keluar
+                </button>
+            </div>
         </div>
 
         <!-- WADAH DINAMIS UNTUK HALAMAN -->
@@ -83,7 +80,7 @@
         </div>
     </div>
 
-    <!-- MODAL CEK TAGIHAN PUBLIK -->
+    <!-- ==================== MODAL CEK TAGIHAN PUBLIK ==================== -->
     <div class="modal-overlay" id="publicModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -101,6 +98,7 @@
         </div>
     </div>
 
+    <!-- Load JavaScript Utama -->
     <script src="js/app.js"></script>
 </body>
 </html>
