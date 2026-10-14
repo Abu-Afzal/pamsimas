@@ -1,9 +1,18 @@
-<div class="login-wrapper">
+<div class="login-page-wrapper">
+    <div class="login-background">
+        <div class="bg-overlay"></div>
+    </div>
+    
     <div class="login-container">
         <div class="login-header">
-            <i class="fas fa-tint login-logo"></i>
-            <h2>SiPAMS</h2>
-            <p>Sistem Informasi PAMSIMAS Digital</p>
+            <div class="logo-container">
+                <i class="fas fa-tint logo-icon"></i>
+                <div class="logo-text">
+                    <h2>SiPAMS</h2>
+                    <p>Sistem Informasi PAMSIMAS Digital</p>
+                </div>
+            </div>
+            <h3>Login Petugas</h3>
         </div>
 
         <form id="formLogin" class="login-form">
@@ -14,40 +23,36 @@
             
             <div class="form-group">
                 <label><i class="fas fa-lock"></i> Password</label>
-                <input type="password" id="password" placeholder="Masukkan password" required>
+                <div class="password-input">
+                    <input type="password" id="password" placeholder="Masukkan password" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-options">
+                <label class="remember-me">
+                    <input type="checkbox" id="rememberMe">
+                    <span>Remember me</span>
+                </label>
             </div>
 
             <div id="loginError" class="login-error"></div>
 
             <button type="submit" class="btn-login">
-                <i class="fas fa-sign-in-alt"></i> Masuk
+                <i class="fas fa-sign-in-alt"></i> Login
             </button>
         </form>
 
-        <div class="login-info">
-            <h4>🔑 Akun Demo (Prototype)</h4>
-            <div class="demo-accounts">
-                <div class="demo-item">
-                    <span class="role-badge role-admin">ADMIN</span>
-                    <code>admin / admin123</code>
-                </div>
-                <div class="demo-item">
-                    <span class="role-badge role-ketua">KETUA</span>
-                    <code>ketua / ketua123</code>
-                </div>
-                <div class="demo-item">
-                    <span class="role-badge role-sekretaris">SEKRETARIS</span>
-                    <code>sekretaris / sekretaris123</code>
-                </div>
-                <div class="demo-item">
-                    <span class="role-badge role-bendahara">BENDAHARA</span>
-                    <code>bendahara / bendahara123</code>
-                </div>
-                <div class="demo-item">
-                    <span class="role-badge role-petugas">PETUGAS</span>
-                    <code>petugas1 / petugas123</code>
-                </div>
-            </div>
+        <div class="login-footer">
+            <p>Mau cek tagihan Air? <a href="#" onclick="showPublicCheck(); return false;"><strong>Cek Tagihan</strong></a></p>
+        </div>
+
+        <div class="demo-info">
+            <p><strong>Akun Demo:</strong></p>
+            <div class="demo-badge">admin / admin123</div>
+            <div class="demo-badge">sekretaris / sekretaris123</div>
         </div>
     </div>
 </div>

@@ -1,6 +1,13 @@
 // ==================== KONFIGURASI PATH (PENTING UNTUK GITHUB PAGES) ====================
-// Otomatis mendeteksi apakah sedang di GitHub Pages (/pamsimas/) atau Localhost (/)
 const BASE_PATH = window.location.pathname.includes('/pamsimas/') ? '/pamsimas/' : '/';
+
+// ==================== DATA DUMMY PELANGGAN (GLOBAL) ====================
+// Digunakan oleh Modal Cek Tagihan dan Halaman Cek Tagihan Publik
+const DATA_PELANGGAN_DUMMY = [
+    { nomor: 'PLG-001', nama: 'Budi Santoso', alamat: 'Jl. Melati No. 12', pemakaian: 15, total: 75000, status: 'Belum Lunas', periode: 'Oktober 2026' },
+    { nomor: 'PLG-002', nama: 'Siti Aminah', alamat: 'Jl. Mawar No. 5', pemakaian: 10, total: 50000, status: 'Lunas', periode: 'Oktober 2026' },
+    { nomor: 'PLG-003', nama: 'Ahmad Rizki', alamat: 'Jl. Anggrek No. 8', pemakaian: 25, total: 125000, status: 'Belum Lunas', periode: 'Oktober 2026' }
+];
 
 // ==================== DATABASE USER (MOCK) ====================
 const USERS_DB = [
@@ -49,9 +56,8 @@ const MENU_BY_ROLE = {
 
 // ==================== INISIALISASI APLIKASI ====================
 document.addEventListener('DOMContentLoaded', () => {
-    updatePeriode(); // Update periode otomatis
+    updatePeriode();
     const session = getSession();
-    
     if (session) {
         initApp(session);
     } else {
@@ -85,15 +91,13 @@ function logout() {
     }
 }
 
-// ==================== INISIALISASI SETELAH LOGIN (PERBAIKAN DI SINI) ====================
+// ==================== INISIALISASI SETELAH LOGIN ====================
 function initApp(session) {
-    // 1. TAMPILKAN elemen yang sebelumnya disembunyikan saat belum login
     const userInfoBox = document.getElementById('userInfoBox');
     const topbarActions = document.getElementById('topbarActions');
     if (userInfoBox) userInfoBox.style.display = 'flex';
     if (topbarActions) topbarActions.style.display = 'flex';
 
-    // 2. Update info user
     document.getElementById('currentUser').innerText = session.nama;
     const roleBadge = document.getElementById('currentRole');
     roleBadge.innerText = session.role.toUpperCase();
@@ -103,7 +107,6 @@ function initApp(session) {
         document.getElementById('zona-aktif').innerText = session.zona;
     }
 
-    // 3. Render menu & load dashboard
     renderSidebarMenu(session.role);
     loadPage('dashboard');
 }
@@ -151,36 +154,43 @@ function attachMenuListeners() {
     });
 }
 
-// ==================== ROUTING HALAMAN (PERBAIKAN PATH DI SINI) ====================
+// ==================== ROUTING HALAMAN ====================
 async function loadPage(pageName, isLogin = false) {
     const container = document.getElementById('page-container');
     const titleElement = document.getElementById('page-title');
+    const sidebar = document.getElementById('sidebar');
+    const topbarActions = document.getElementById('topbarActions');
+    const mainContent = document.getElementById('mainContent');
     
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Memuat...</p></div>';
 
     try {
-        // Gunakan BASE_PATH agar aman di GitHub Pages maupun Localhost
         const response = await fetch(`${BASE_PATH}pages/${pageName}.html`);
         if (!response.ok) throw new Error('Halaman tidak ditemukan');
         
         const html = await response.text();
         container.innerHTML = html;
         
-        if (isLogin) {
-            titleElement.innerText = 'Login Sistem';
-            document.getElementById('sidebar').style.display = 'none';
-            document.getElementById('topbarActions').style.display = 'none';
-            document.getElementById('mainContent').style.marginLeft = '0';
+        // Halaman yang harus tampil full-screen (tanpa sidebar)
+        const fullScreenPages = ['login', 'cek-tagihan'];
+        
+        if (fullScreenPages.includes(pageName)) {
+            titleElement.innerText = pageName === 'login' ? 'Login Sistem' : 'Cek Tagihan Pelanggan';
+            sidebar.style.display = 'none';
+            topbarActions.style.display = 'none';
+            mainContent.style.marginLeft = '0';
             
-            setTimeout(() => {
-                const form = document.getElementById('formLogin');
-                if (form) form.addEventListener('submit', handleLogin);
-            }, 100);
+            if (pageName === 'login') {
+                setTimeout(() => {
+                    const form = document.getElementById('formLogin');
+                    if (form) form.addEventListener('submit', handleLogin);
+                }, 100);
+            }
         } else {
             titleElement.innerText = pageName.replace(/-/g, ' ').toUpperCase();
-            document.getElementById('sidebar').style.display = 'flex';
-            document.getElementById('topbarActions').style.display = 'flex';
-            document.getElementById('mainContent').style.marginLeft = '260px';
+            sidebar.style.display = 'flex';
+            topbarActions.style.display = 'flex';
+            mainContent.style.marginLeft = '260px';
         }
         
         document.querySelectorAll('.menu-link, .submenu-item').forEach(link => {
@@ -273,12 +283,23 @@ function updatePeriode() {
     if (el) el.innerText = `${bulan[sekarang.getMonth()]} ${sekarang.getFullYear()}`;
 }
 
-// ==================== MODAL CEK TAGIHAN PUBLIK ====================
-const dataPelanggan = [
-    { nomor: 'PLG-001', nama: 'Budi Santoso', alamat: 'Jl. Melati No. 12', pemakaian: 15, total: 75000, status: 'Belum Lunas' },
-    { nomor: 'PLG-002', nama: 'Siti Aminah', alamat: 'Jl. Mawar No. 5', pemakaian: 10, total: 50000, status: 'Lunas' }
-];
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('toggleIcon');
+    if (!passwordInput || !toggleIcon) return;
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
 
+// ==================== FITUR CEK TAGIHAN (MODAL & HALAMAN) ====================
 function openPublicCheck() {
     document.getElementById('publicModal').classList.add('show');
     document.getElementById('searchPelanggan').focus();
@@ -290,12 +311,17 @@ function closePublicCheck() {
     document.getElementById('searchPelanggan').value = '';
 }
 
+function showPublicCheck() {
+    loadPage('cek-tagihan');
+}
+
 function cariTagihan() {
     const keyword = document.getElementById('searchPelanggan').value.toLowerCase().trim();
     const hasilDiv = document.getElementById('hasilPencarian');
     if (keyword === '') { hasilDiv.innerHTML = '<p style="color:red;">Masukkan kata kunci!</p>'; return; }
     
-    const hasil = dataPelanggan.filter(p => p.nama.toLowerCase().includes(keyword) || p.nomor.toLowerCase().includes(keyword));
+    const hasil = DATA_PELANGGAN_DUMMY.filter(p => p.nama.toLowerCase().includes(keyword) || p.nomor.toLowerCase().includes(keyword));
+    
     if (hasil.length === 0) {
         hasilDiv.innerHTML = '<p style="color:red;">Data tidak ditemukan.</p>';
     } else {
@@ -313,6 +339,49 @@ function cariTagihan() {
     }
 }
 
-document.getElementById('publicModal').addEventListener('click', function(e) {
-    if (e.target === this) closePublicCheck();
+function cekTagihanPublik() {
+    const keyword = document.getElementById('searchNomor').value.toLowerCase().trim();
+    const hasilDiv = document.getElementById('hasilCekTagihan');
+    
+    if (keyword === '') {
+        hasilDiv.innerHTML = '<p style="color: #e74c3c; text-align: center;"><i class="fas fa-exclamation-circle"></i> Masukkan nomor/nama pelanggan!</p>';
+        return;
+    }
+    
+    const hasil = DATA_PELANGGAN_DUMMY.filter(p => p.nama.toLowerCase().includes(keyword) || p.nomor.toLowerCase().includes(keyword));
+    
+    if (hasil.length === 0) {
+        hasilDiv.innerHTML = '<p style="color: #e74c3c; text-align: center;"><i class="fas fa-search"></i> Data pelanggan tidak ditemukan.</p>';
+    } else {
+        let html = '';
+        hasil.forEach(p => {
+            const statusClass = p.status === 'Lunas' ? 'status-lunas' : 'status-belum';
+            const statusIcon = p.status === 'Lunas' ? 'fa-check-circle' : 'fa-times-circle';
+            html += `
+                <div class="tagihan-result">
+                    <h4><i class="fas fa-user"></i> ${p.nama}</h4>
+                    <div class="row"><span class="label">Nomor Pelanggan:</span><span class="value">${p.nomor}</span></div>
+                    <div class="row"><span class="label">Alamat:</span><span class="value">${p.alamat}</span></div>
+                    <div class="row"><span class="label">Periode:</span><span class="value">${p.periode}</span></div>
+                    <div class="row"><span class="label">Pemakaian:</span><span class="value">${p.pemakaian} m³</span></div>
+                    <div class="row"><span class="label">Status:</span><span class="${statusClass}"><i class="fas ${statusIcon}"></i> ${p.status}</span></div>
+                    <div class="total"><div class="row"><span>Total Tagihan:</span><span>Rp ${p.total.toLocaleString('id-ID')}</span></div></div>
+                </div>`;
+        });
+        hasilDiv.innerHTML = html;
+    }
+}
+
+// Event Listeners Global
+document.addEventListener('keypress', function(e) {
+    if (e.target && e.target.id === 'searchNomor' && e.key === 'Enter') {
+        cekTagihanPublik();
+    }
 });
+
+const publicModal = document.getElementById('publicModal');
+if (publicModal) {
+    publicModal.addEventListener('click', function(e) {
+        if (e.target === this) closePublicCheck();
+    });
+}
