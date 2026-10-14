@@ -1,4 +1,8 @@
-// ==================== DATABASE USER (MOCK - Nanti diganti Supabase) ====================
+// ==================== KONFIGURASI PATH (PENTING UNTUK GITHUB PAGES) ====================
+// Otomatis mendeteksi apakah sedang di GitHub Pages (/pamsimas/) atau Localhost (/)
+const BASE_PATH = window.location.pathname.includes('/pamsimas/') ? '/pamsimas/' : '/';
+
+// ==================== DATABASE USER (MOCK) ====================
 const USERS_DB = [
     { id: 1, nama: 'Administrator', username: 'admin', password: 'admin123', role: 'admin' },
     { id: 2, nama: 'Pak Ketua', username: 'ketua', password: 'ketua123', role: 'ketua' },
@@ -11,12 +15,7 @@ const USERS_DB = [
 const MENU_BY_ROLE = {
     admin: [
         { label: 'Beranda', icon: 'fa-home', page: 'dashboard' },
-        { 
-            label: 'ADMINISTRASI', icon: 'fa-user-shield', 
-            children: [
-                { label: 'Manajemen Pengguna', page: 'manajemen-user' }
-            ]
-        },
+        { label: 'ADMINISTRASI', icon: 'fa-user-shield', children: [{ label: 'Manajemen Pengguna', page: 'manajemen-user' }] },
         { label: 'Laporan Keuangan', icon: 'fa-chart-line', page: 'laporan-keuangan' }
     ],
     ketua: [
@@ -26,32 +25,19 @@ const MENU_BY_ROLE = {
     ],
     sekretaris: [
         { label: 'Dashboard', icon: 'fa-home', page: 'dashboard' },
-        { 
-            label: 'DATA MASTER', icon: 'fa-database', 
-            children: [
-                { label: 'Data Pelanggan', page: 'data-pelanggan' },
-                { label: 'Data Zona/Wilayah', page: 'data-zona' },
-                { label: 'Tarif Air', page: 'tarif-air' }
-            ]
-        },
-        { 
-            label: 'MANAJEMEN', icon: 'fa-user-hard-hat', 
-            children: [
-                { label: 'Manajemen Petugas', page: 'manajemen-petugas' }
-            ]
-        },
-        { label: 'Pengaduan', icon: 'fa-comment-dots', page: 'pengaduan' }
+        { label: 'DATA MASTER', icon: 'fa-database', children: [
+            { label: 'Data Pelanggan', page: 'data-pelanggan' },
+            { label: 'Data Zona/Wilayah', page: 'data-zona' },
+            { label: 'Tarif Air', page: 'tarif-air' }
+        ]},
+        { label: 'MANAJEMEN', icon: 'fa-user-hard-hat', children: [{ label: 'Manajemen Petugas', page: 'manajemen-petugas' }] }
     ],
     bendahara: [
         { label: 'Dashboard', icon: 'fa-home', page: 'dashboard' },
-        { 
-            label: 'TRANSAKSI', icon: 'fa-exchange-alt', 
-            children: [
-                { label: 'Generate Tagihan', page: 'generate-tagihan' },
-                { label: 'Pembayaran', page: 'pembayaran' },
-                { label: 'Riwayat Transaksi', page: 'riwayat-transaksi' }
-            ]
-        },
+        { label: 'TRANSAKSI', icon: 'fa-exchange-alt', children: [
+            { label: 'Generate Tagihan', page: 'generate-tagihan' },
+            { label: 'Pembayaran', page: 'pembayaran' }
+        ]},
         { label: 'Laporan Keuangan', icon: 'fa-chart-line', page: 'laporan-keuangan' }
     ],
     petugas: [
@@ -63,21 +49,19 @@ const MENU_BY_ROLE = {
 
 // ==================== INISIALISASI APLIKASI ====================
 document.addEventListener('DOMContentLoaded', () => {
+    updatePeriode(); // Update periode otomatis
     const session = getSession();
     
     if (session) {
-        // Sudah login → tampilkan aplikasi
         initApp(session);
     } else {
-        // Belum login → tampilkan halaman login
         loadPage('login', true);
     }
 });
 
-// ==================== FUNGSI LOGIN ====================
+// ==================== FUNGSI LOGIN & LOGOUT ====================
 function handleLogin(e) {
     e.preventDefault();
-    
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
     const errorDiv = document.getElementById('loginError');
@@ -85,17 +69,8 @@ function handleLogin(e) {
     const user = USERS_DB.find(u => u.username === username && u.password === password);
     
     if (user) {
-        // Simpan session
-        const session = {
-            id: user.id,
-            nama: user.nama,
-            username: user.username,
-            role: user.role,
-            zona: user.zona || null
-        };
+        const session = { id: user.id, nama: user.nama, username: user.username, role: user.role, zona: user.zona || 'Umum' };
         localStorage.setItem('sipams_session', JSON.stringify(session));
-        
-        // Redirect ke aplikasi
         initApp(session);
     } else {
         errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Username atau password salah!';
@@ -103,69 +78,66 @@ function handleLogin(e) {
     }
 }
 
-// ==================== FUNGSI LOGOUT ====================
 function logout() {
     if (confirm('Yakin ingin keluar dari aplikasi?')) {
         localStorage.removeItem('sipams_session');
-        location.reload(); // Reload → akan redirect ke login
+        location.reload();
     }
 }
 
-// ==================== INISIALISASI APLIKASI SETELAH LOGIN ====================
+// ==================== INISIALISASI SETELAH LOGIN (PERBAIKAN DI SINI) ====================
 function initApp(session) {
-    // Update info user di sidebar
+    // 1. TAMPILKAN elemen yang sebelumnya disembunyikan saat belum login
+    const userInfoBox = document.getElementById('userInfoBox');
+    const topbarActions = document.getElementById('topbarActions');
+    if (userInfoBox) userInfoBox.style.display = 'flex';
+    if (topbarActions) topbarActions.style.display = 'flex';
+
+    // 2. Update info user
     document.getElementById('currentUser').innerText = session.nama;
-    document.getElementById('currentRole').innerText = session.role.toUpperCase();
-    document.getElementById('currentRole').className = `role-badge role-${session.role}`;
+    const roleBadge = document.getElementById('currentRole');
+    roleBadge.innerText = session.role.toUpperCase();
+    roleBadge.className = `role-badge role-${session.role}`;
     
-    // Render menu sesuai role
+    if (session.zona) {
+        document.getElementById('zona-aktif').innerText = session.zona;
+    }
+
+    // 3. Render menu & load dashboard
     renderSidebarMenu(session.role);
-    
-    // Load dashboard sebagai halaman awal
     loadPage('dashboard');
 }
 
-// ==================== RENDER SIDEBAR DINAMIS ====================
+// ==================== RENDER SIDEBAR ====================
 function renderSidebarMenu(role) {
     const menuContainer = document.getElementById('dynamic-sidebar-menu');
     const menuData = MENU_BY_ROLE[role] || [];
-    
     let html = '';
     
     menuData.forEach((item, index) => {
         if (item.children) {
-            // Menu dengan submenu
             const submenuId = `submenu-${index}`;
             html += `
                 <div class="menu-section">
                     <a href="#" class="menu-link" onclick="toggleSubmenu('${submenuId}')">
-                        <i class="fas ${item.icon}"></i>
-                        <span>${item.label}</span>
+                        <i class="fas ${item.icon}"></i><span>${item.label}</span>
                         <i class="fas fa-chevron-down arrow" id="arrow-${submenuId}"></i>
                     </a>
                     <div class="submenu collapsed" id="${submenuId}">
-                        ${item.children.map(child => `
-                            <a href="#" class="submenu-item" data-page="${child.page}">${child.label}</a>
-                        `).join('')}
+                        ${item.children.map(child => `<a href="#" class="submenu-item" data-page="${child.page}">${child.label}</a>`).join('')}
                     </div>
-                </div>
-            `;
+                </div>`;
         } else {
-            // Menu tanpa submenu
             html += `
                 <div class="menu-section">
                     <a href="#" class="menu-link" data-page="${item.page}">
-                        <i class="fas ${item.icon}"></i>
-                        <span>${item.label}</span>
+                        <i class="fas ${item.icon}"></i><span>${item.label}</span>
                     </a>
-                </div>
-            `;
+                </div>`;
         }
     });
     
     menuContainer.innerHTML = html;
-    
-    // Re-attach event listener untuk link menu
     attachMenuListeners();
 }
 
@@ -173,17 +145,13 @@ function attachMenuListeners() {
     document.querySelectorAll('[data-page]').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const page = link.getAttribute('data-page');
-            loadPage(page);
-            
-            if (window.innerWidth <= 768) {
-                document.getElementById('sidebar').classList.remove('show');
-            }
+            loadPage(link.getAttribute('data-page'));
+            if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('show');
         });
     });
 }
 
-// ==================== ROUTING HALAMAN ====================
+// ==================== ROUTING HALAMAN (PERBAIKAN PATH DI SINI) ====================
 async function loadPage(pageName, isLogin = false) {
     const container = document.getElementById('page-container');
     const titleElement = document.getElementById('page-title');
@@ -191,62 +159,61 @@ async function loadPage(pageName, isLogin = false) {
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Memuat...</p></div>';
 
     try {
-        const response = await fetch(`pages/${pageName}.html`);
+        // Gunakan BASE_PATH agar aman di GitHub Pages maupun Localhost
+        const response = await fetch(`${BASE_PATH}pages/${pageName}.html`);
         if (!response.ok) throw new Error('Halaman tidak ditemukan');
         
         const html = await response.text();
         container.innerHTML = html;
         
-        // Update judul
-        if (!isLogin) {
-            const pageTitle = pageName.replace(/-/g, ' ').toUpperCase();
-            titleElement.innerText = pageTitle;
+        if (isLogin) {
+            titleElement.innerText = 'Login Sistem';
+            document.getElementById('sidebar').style.display = 'none';
+            document.getElementById('topbarActions').style.display = 'none';
+            document.getElementById('mainContent').style.marginLeft = '0';
+            
+            setTimeout(() => {
+                const form = document.getElementById('formLogin');
+                if (form) form.addEventListener('submit', handleLogin);
+            }, 100);
         } else {
-            titleElement.innerText = 'Login';
+            titleElement.innerText = pageName.replace(/-/g, ' ').toUpperCase();
+            document.getElementById('sidebar').style.display = 'flex';
+            document.getElementById('topbarActions').style.display = 'flex';
+            document.getElementById('mainContent').style.marginLeft = '260px';
         }
         
-        // Update active state
         document.querySelectorAll('.menu-link, .submenu-item').forEach(link => {
             link.classList.remove('active');
-            if (link.getAttribute('data-page') === pageName) {
-                link.classList.add('active');
-            }
+            if (link.getAttribute('data-page') === pageName) link.classList.add('active');
         });
         
-        // Attach event handler khusus halaman
         attachPageHandlers(pageName);
-        
     } catch (error) {
-        container.innerHTML = `<div class="content-card"><h3>Error 404</h3><p>Halaman <strong>${pageName}.html</strong> tidak ditemukan.</p></div>`;
+        container.innerHTML = `<div class="content-card"><h3>Error 404</h3><p>Halaman <strong>${pageName}.html</strong> tidak ditemukan di folder pages/.</p></div>`;
     }
 }
 
 // ==================== HANDLER KHUSUS HALAMAN ====================
 function attachPageHandlers(pageName) {
-    if (pageName === 'login') {
-        const form = document.getElementById('formLogin');
-        if (form) form.addEventListener('submit', handleLogin);
-    }
-    
     if (pageName === 'manajemen-user') {
         const form = document.getElementById('formTambahUser');
         if (form) {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                alert('✅ User berhasil ditambahkan! (Simulasi - nanti pakai Supabase)');
+                alert('✅ User berhasil ditambahkan! (Simulasi)');
                 renderDaftarUser();
                 form.reset();
             });
         }
         renderDaftarUser();
     }
-    
     if (pageName === 'manajemen-petugas') {
         const form = document.getElementById('formTambahPetugas');
         if (form) {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                alert('✅ Petugas berhasil ditambahkan! (Simulasi - nanti pakai Supabase)');
+                alert('✅ Petugas berhasil ditambahkan! (Simulasi)');
                 renderDaftarPetugas();
                 form.reset();
             });
@@ -258,41 +225,27 @@ function attachPageHandlers(pageName) {
 function renderDaftarUser() {
     const container = document.getElementById('daftarUser');
     if (!container) return;
-    
     const users = USERS_DB.filter(u => ['ketua', 'sekretaris', 'bendahara'].includes(u.role));
-    
     container.innerHTML = users.map(u => `
         <div class="user-item">
             <div class="user-info">
                 <i class="fas fa-user-circle"></i>
-                <div>
-                    <strong>${u.nama}</strong>
-                    <div class="user-meta">@${u.username} • <span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span></div>
-                </div>
+                <div><strong>${u.nama}</strong><div class="user-meta">@${u.username} • <span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span></div></div>
             </div>
-            <button class="btn-icon" onclick="alert('Fitur edit/hapus akan ditambahkan')"><i class="fas fa-ellipsis-v"></i></button>
-        </div>
-    `).join('');
+        </div>`).join('');
 }
 
 function renderDaftarPetugas() {
     const container = document.getElementById('daftarPetugas');
     if (!container) return;
-    
     const petugas = USERS_DB.filter(u => u.role === 'petugas');
-    
     container.innerHTML = petugas.map(p => `
         <div class="user-item">
             <div class="user-info">
                 <i class="fas fa-user-hard-hat"></i>
-                <div>
-                    <strong>${p.nama}</strong>
-                    <div class="user-meta">@${p.username} • ${p.zona || 'Belum ada zona'}</div>
-                </div>
+                <div><strong>${p.nama}</strong><div class="user-meta">@${p.username} • ${p.zona || 'Belum ada zona'}</div></div>
             </div>
-            <button class="btn-icon"><i class="fas fa-ellipsis-v"></i></button>
-        </div>
-    `).join('');
+        </div>`).join('');
 }
 
 // ==================== UTILITIES ====================
@@ -311,6 +264,13 @@ function toggleSubmenu(menuId) {
     const menuLink = arrow.parentElement;
     submenu.classList.toggle('collapsed');
     menuLink.classList.toggle('collapsed');
+}
+
+function updatePeriode() {
+    const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const sekarang = new Date();
+    const el = document.getElementById('periode-tagihan');
+    if (el) el.innerText = `${bulan[sekarang.getMonth()]} ${sekarang.getFullYear()}`;
 }
 
 // ==================== MODAL CEK TAGIHAN PUBLIK ====================
@@ -333,11 +293,9 @@ function closePublicCheck() {
 function cariTagihan() {
     const keyword = document.getElementById('searchPelanggan').value.toLowerCase().trim();
     const hasilDiv = document.getElementById('hasilPencarian');
-    
     if (keyword === '') { hasilDiv.innerHTML = '<p style="color:red;">Masukkan kata kunci!</p>'; return; }
     
     const hasil = dataPelanggan.filter(p => p.nama.toLowerCase().includes(keyword) || p.nomor.toLowerCase().includes(keyword));
-    
     if (hasil.length === 0) {
         hasilDiv.innerHTML = '<p style="color:red;">Data tidak ditemukan.</p>';
     } else {
@@ -347,7 +305,7 @@ function cariTagihan() {
             html += `<div class="tagihan-item">
                         <h5>${p.nama} (${p.nomor})</h5>
                         <p>Pemakaian: ${p.pemakaian} m³</p>
-                        <p style="font-size:18px; font-weight:bold; color:#1abc9c;">Rp ${p.total.toLocaleString('id-ID')}</p>
+                        <p style="font-size:18px; font-weight:bold; color:#1abc9c; margin-top:5px;">Rp ${p.total.toLocaleString('id-ID')}</p>
                         <p>Status: <span style="color:${warna}; font-weight:bold;">${p.status}</span></p>
                      </div>`;
         });
