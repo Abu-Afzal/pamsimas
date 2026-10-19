@@ -1,5 +1,5 @@
 // Modular Firebase Setup (Firebase SDK v10)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     getFirestore, 
     collection, 
@@ -7,6 +7,7 @@ import {
     updateDoc, 
     doc, 
     getDoc,
+    setDoc,
     onSnapshot,
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -14,10 +15,10 @@ import {
     getAuth, 
     signInWithEmailAndPassword, 
     signOut, 
-    onAuthStateChanged 
+    onAuthStateChanged,
+    createUserWithEmailAndPassword 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// Konfigurasi Firebase Anda
 const firebaseConfig = {
     apiKey: "AIzaSyBs5FCHTWJrL15RRdnJbEsvnsZvm90Xc8s",
     authDomain: "pamsimas-c5545.firebaseapp.com",
@@ -32,7 +33,12 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Parameter Tarif
+// Inisialisasi Secondary App khusus untuk Admin mendaftarkan user baru tanpa logout
+const secondaryApp = getApps().find(app => app.name === "SecondaryApp") 
+    ? getApp("SecondaryApp") 
+    : initializeApp(firebaseConfig, "SecondaryApp");
+const secondaryAuth = getAuth(secondaryApp);
+
 const TARIF_PER_M3 = 2500;
 const BIAYA_BEBAN = 5000;
 
@@ -57,7 +63,7 @@ function initApp() {
 }
 
 // -------------------------------------------------------------
-// FIREBASE AUTH & ROLE MANAGEMENT
+// AUTHENTICATION & ROLE MANAGEMENT
 // -------------------------------------------------------------
 
 function setupAuthListener() {
@@ -65,18 +71,16 @@ function setupAuthListener() {
         const authContainer = document.getElementById("auth-action-container");
         
         if (user) {
-            // Ambil data role dari koleksi 'users' di Firestore
             const userDocRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userDocRef);
 
             if (userSnap.exists()) {
                 const userData = userSnap.data();
-                currentUserRole = userData.role; // 'petugas', 'bendahara', 'ketua'
+                currentUserRole = userData.role; // 'admin', 'petugas', 'bendahara', 'sekretaris', 'ketua'
                 
-                // Tampilkan tombol Logout dan Info User
                 authContainer.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <span class="text-xs text-blue-100 hidden sm:inline">Halo, <b>${userData.nama}</b></span>
+                        <span class="text-xs text-blue-100 hidden sm:inline">Halo, <b>${userData.nama}</b> (${userData.role.toUpperCase()})</span>
                         <button onclick="handleLogout()" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-rose-700 transition shadow">
                             <i class="fa-solid fa-right-from-bracket"></i> Logout
                         </button>
@@ -85,7 +89,7 @@ function setupAuthListener() {
 
                 applyRoleAccess(currentUserRole);
             } else {
-                showAlert("Akun terautentikasi tetapi role tidak ditemukan di database.", "bg-rose-100 text-rose-800");
+                showAlert("Akun terautentikasi tetapi profil role tidak ditemukan di database.", "bg-rose-100 text-rose-800");
                 signOut(auth);
             }
         } else {
@@ -104,13 +108,20 @@ function applyRoleAccess(role) {
     const btnPetugas = document.getElementById("tab-petugas");
     const btnBendahara = document.getElementById("tab-bendahara");
     const btnLaporan = document.getElementById("tab-laporan");
+    const btnAdmin = document.getElementById("tab-admin");
 
-    // Sembunyikan semua menu internal dulu
     btnPetugas.classList.add("hidden");
     btnBendahara.classList.add("hidden");
     btnLaporan.classList.add("hidden");
+    btnAdmin.classList.add("hidden");
 
-    if (role === "petugas") {
+    if (role === "admin") {
+        btnAdmin.classList.remove("hidden");
+        btnPetugas.classList.remove("hidden");
+        btnBendahara.classList.remove("hidden");
+        btnLaporan.classList.remove("hidden");
+        switchTab("admin");
+    } else if (role === "petugas") {
         btnPetugas.classList.remove("hidden");
         switchTab("petugas");
     } else if (role === "bendahara") {
@@ -130,7 +141,85 @@ window.handleLogout = async () => {
 };
 
 // -------------------------------------------------------------
-// FIRESTORE LISTENERS & EVENT HANDLERS
+// EVENT LISTENERS & HANDLERS
+// -------------------------------------------------------------
+
+function setupEventListeners() {
+    // Form Login Submit
+    document.getElementById("form-login").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("login-email").value;
+        const pass = document.getElementById("login-password").value;
+
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+            toggleModalLogin(false);
+            showAlert("Login berhasil! Selamat datang di Panel Pengurus.", "bg-emerald-100 text-emerald-800");
+            document.getElementById("form-login").reset();
+        } catch (err) {
+            console.error(err);
+            showAlert("Gagal Login: Periksa kembali Email dan Password Anda.", "bg-rose-100 text-rose-800");
+        }
+    });
+
+    // Form Pendaftaran User Baru oleh Admin
+    document.getElementById("form-tambah-user").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nama = document.getElementById("admin-nama").value.trim();
+        const email = document.getElementById("admin-email").value.trim();
+        const password = document.getElementById("admin-password").value.trim();
+        const role = document.getElementById("admin-role").value;
+
+        try {
+            // Buat akun di Auth menggunakan secondary instance agar admin tidak logout
+            const userCred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+            const newUid = userCred.user.uid;
+
+            // Simpan profil & role ke Firestore koleksi 'users'
+            await setDoc(doc(db, "users", newUid), {
+                nama: nama,
+                email: email,
+                role: role,
+                created_at: serverTimestamp()
+            });
+
+            showAlert(`Sukses! Akun ${nama} (${role}) berhasil didaftarkan.`, "bg-emerald-100 text-emerald-800");
+            document.getElementById("form-tambah-user").reset();
+        } catch (err) {
+            console.error(err);
+            showAlert("Gagal mendaftarkan user: " + err.message, "bg-rose-100 text-rose-800");
+        }
+    });
+
+    document.getElementById("input-pelanggan").addEventListener("change", (e) => {
+        const idPel = e.target.value;
+        const meterLalu = getMeteranLalu(idPel);
+        document.getElementById("input-meter-lalu").value = meterLalu;
+        calculateInputForm();
+    });
+
+    document.getElementById("input-meter-kini").addEventListener("input", calculateInputForm);
+
+    document.getElementById("form-input-meter").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await simpanCatatanAir();
+    });
+
+    document.getElementById("form-tambah-pelanggan").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await simpanPelangganBaru();
+    });
+
+    document.getElementById("form-cari-warga").addEventListener("submit", (e) => {
+        e.preventDefault();
+        cariTagihanWarga();
+    });
+
+    document.getElementById("filter-periode-bendahara").addEventListener("change", renderTableBendahara);
+}
+
+// -------------------------------------------------------------
+// FIRESTORE LISTENERS & LOGIC
 // -------------------------------------------------------------
 
 function listenPelanggan() {
@@ -187,51 +276,6 @@ function listenTagihan() {
         renderTableBendahara();
         updateDashboardStats();
     });
-}
-
-function setupEventListeners() {
-    // Form Login Submit
-    document.getElementById("form-login").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("login-email").value;
-        const pass = document.getElementById("login-password").value;
-
-        try {
-            await signInWithEmailAndPassword(auth, email, pass);
-            toggleModalLogin(false);
-            showAlert("Login berhasil! Selamat datang di Panel Pengurus.", "bg-emerald-100 text-emerald-800");
-            document.getElementById("form-login").reset();
-        } catch (err) {
-            console.error(err);
-            showAlert("Gagal Login: Periksa kembali Email dan Password Anda.", "bg-rose-100 text-rose-800");
-        }
-    });
-
-    document.getElementById("input-pelanggan").addEventListener("change", (e) => {
-        const idPel = e.target.value;
-        const meterLalu = getMeteranLalu(idPel);
-        document.getElementById("input-meter-lalu").value = meterLalu;
-        calculateInputForm();
-    });
-
-    document.getElementById("input-meter-kini").addEventListener("input", calculateInputForm);
-
-    document.getElementById("form-input-meter").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        await simpanCatatanAir();
-    });
-
-    document.getElementById("form-tambah-pelanggan").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        await simpanPelangganBaru();
-    });
-
-    document.getElementById("form-cari-warga").addEventListener("submit", (e) => {
-        e.preventDefault();
-        cariTagihanWarga();
-    });
-
-    document.getElementById("filter-periode-bendahara").addEventListener("change", renderTableBendahara);
 }
 
 function getMeteranLalu(idPelanggan) {
