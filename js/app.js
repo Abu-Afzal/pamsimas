@@ -1,387 +1,375 @@
-// ==================== KONFIGURASI PATH (PENTING UNTUK GITHUB PAGES) ====================
-const BASE_PATH = window.location.pathname.includes('/pamsimas/') ? '/pamsimas/' : '/';
+// Modular Firebase Setup (Firebase SDK v10)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    updateDoc, 
+    doc, 
+    onSnapshot,
+    serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// ==================== DATA DUMMY PELANGGAN (GLOBAL) ====================
-// Digunakan oleh Modal Cek Tagihan dan Halaman Cek Tagihan Publik
-const DATA_PELANGGAN_DUMMY = [
-    { nomor: 'PLG-001', nama: 'Budi Santoso', alamat: 'Jl. Melati No. 12', pemakaian: 15, total: 75000, status: 'Belum Lunas', periode: 'Oktober 2026' },
-    { nomor: 'PLG-002', nama: 'Siti Aminah', alamat: 'Jl. Mawar No. 5', pemakaian: 10, total: 50000, status: 'Lunas', periode: 'Oktober 2026' },
-    { nomor: 'PLG-003', nama: 'Ahmad Rizki', alamat: 'Jl. Anggrek No. 8', pemakaian: 25, total: 125000, status: 'Belum Lunas', periode: 'Oktober 2026' }
-];
-
-// ==================== DATABASE USER (MOCK) ====================
-const USERS_DB = [
-    { id: 1, nama: 'Administrator', username: 'admin', password: 'admin123', role: 'admin' },
-    { id: 2, nama: 'Pak Ketua', username: 'ketua', password: 'ketua123', role: 'ketua' },
-    { id: 3, nama: 'Bu Sekretaris', username: 'sekretaris', password: 'sekretaris123', role: 'sekretaris' },
-    { id: 4, nama: 'Bu Bendahara', username: 'bendahara', password: 'bendahara123', role: 'bendahara' },
-    { id: 5, nama: 'Pak Petugas 1', username: 'petugas1', password: 'petugas123', role: 'petugas', zona: 'Zona 1 - Pusat' }
-];
-
-// ==================== DEFINISI MENU PER ROLE ====================
-const MENU_BY_ROLE = {
-    admin: [
-        { label: 'Beranda', icon: 'fa-home', page: 'dashboard' },
-        { label: 'ADMINISTRASI', icon: 'fa-user-shield', children: [{ label: 'Manajemen Pengguna', page: 'manajemen-user' }] },
-        { label: 'Laporan Keuangan', icon: 'fa-chart-line', page: 'laporan-keuangan' }
-    ],
-    ketua: [
-        { label: 'Dashboard', icon: 'fa-tachometer-alt', page: 'dashboard' },
-        { label: 'Laporan Pemakaian', icon: 'fa-chart-bar', page: 'laporan-pemakaian' },
-        { label: 'Laporan Keuangan', icon: 'fa-chart-line', page: 'laporan-keuangan' }
-    ],
-    sekretaris: [
-        { label: 'Dashboard', icon: 'fa-home', page: 'dashboard' },
-        { label: 'DATA MASTER', icon: 'fa-database', children: [
-            { label: 'Data Pelanggan', page: 'data-pelanggan' },
-            { label: 'Data Zona/Wilayah', page: 'data-zona' },
-            { label: 'Tarif Air', page: 'tarif-air' }
-        ]},
-        { label: 'MANAJEMEN', icon: 'fa-user-hard-hat', children: [{ label: 'Manajemen Petugas', page: 'manajemen-petugas' }] }
-    ],
-    bendahara: [
-        { label: 'Dashboard', icon: 'fa-home', page: 'dashboard' },
-        { label: 'TRANSAKSI', icon: 'fa-exchange-alt', children: [
-            { label: 'Generate Tagihan', page: 'generate-tagihan' },
-            { label: 'Pembayaran', page: 'pembayaran' }
-        ]},
-        { label: 'Laporan Keuangan', icon: 'fa-chart-line', page: 'laporan-keuangan' }
-    ],
-    petugas: [
-        { label: 'Dashboard', icon: 'fa-home', page: 'dashboard' },
-        { label: 'Pencatatan Meter', icon: 'fa-tachometer-alt', page: 'pencatatan-meter' },
-        { label: 'Riwayat Input', icon: 'fa-history', page: 'riwayat-input' }
-    ]
+// 1. Firebase Configuration Anda
+const firebaseConfig = {
+    apiKey: "AIzaSyBs5FCHTWJrL15RRdnJbEsvnsZvm90Xc8s",
+    authDomain: "pamsimas-c5545.firebaseapp.com",
+    projectId: "pamsimas-c5545",
+    storageBucket: "pamsimas-c5545.firebasestorage.app",
+    messagingSenderId: "742328626568",
+    appId: "1:742328626568:web:1723bc4c56f4255cc91e3d",
+    measurementId: "G-ELFLYV6687"
 };
 
-// ==================== INISIALISASI APLIKASI ====================
-document.addEventListener('DOMContentLoaded', () => {
-    updatePeriode();
-    const session = getSession();
-    if (session) {
-        initApp(session);
-    } else {
-        loadPage('login', true);
-    }
+// Inisialisasi Firebase & Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Pengaturan Tarif Air PAMSIMAS Desa Lamanda
+const TARIF_PER_M3 = 2500; // Rp 2.500 / m3
+const BIAYA_BEBAN = 5000;   // Rp 5.000 (Abonemen)
+
+// State Data Lokal
+let globalPelanggan = [];
+let globalTagihan = [];
+
+// Event Inisialisasi Saat Halaman Dimuat
+document.addEventListener("DOMContentLoaded", () => {
+    initApp();
+    setupEventListeners();
 });
 
-// ==================== FUNGSI LOGIN & LOGOUT ====================
-function handleLogin(e) {
-    e.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-    const errorDiv = document.getElementById('loginError');
-    
-    const user = USERS_DB.find(u => u.username === username && u.password === password);
-    
-    if (user) {
-        const session = { id: user.id, nama: user.nama, username: user.username, role: user.role, zona: user.zona || 'Umum' };
-        localStorage.setItem('sipams_session', JSON.stringify(session));
-        initApp(session);
-    } else {
-        errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Username atau password salah!';
-        errorDiv.style.display = 'block';
-    }
+function initApp() {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById("input-periode").value = currentMonth;
+    document.getElementById("filter-periode-bendahara").value = currentMonth;
+
+    // Realtime Listener
+    listenPelanggan();
+    listenTagihan();
 }
 
-function logout() {
-    if (confirm('Yakin ingin keluar dari aplikasi?')) {
-        localStorage.removeItem('sipams_session');
-        location.reload();
-    }
-}
+// Realtime Listener Data Pelanggan
+function listenPelanggan() {
+    const colRef = collection(db, "pelanggan");
+    onSnapshot(colRef, (snapshot) => {
+        globalPelanggan = [];
+        const selectEl = document.getElementById("input-pelanggan");
+        selectEl.innerHTML = '<option value="">-- Pilih Pelanggan --</option>';
+        
+        const tableBody = document.getElementById("table-pelanggan-body");
+        tableBody.innerHTML = "";
 
-// ==================== INISIALISASI SETELAH LOGIN ====================
-function initApp(session) {
-    const userInfoBox = document.getElementById('userInfoBox');
-    const topbarActions = document.getElementById('topbarActions');
-    if (userInfoBox) userInfoBox.style.display = 'flex';
-    if (topbarActions) topbarActions.style.display = 'flex';
-
-    document.getElementById('currentUser').innerText = session.nama;
-    const roleBadge = document.getElementById('currentRole');
-    roleBadge.innerText = session.role.toUpperCase();
-    roleBadge.className = `role-badge role-${session.role}`;
-    
-    if (session.zona) {
-        document.getElementById('zona-aktif').innerText = session.zona;
-    }
-
-    renderSidebarMenu(session.role);
-    loadPage('dashboard');
-}
-
-// ==================== RENDER SIDEBAR ====================
-function renderSidebarMenu(role) {
-    const menuContainer = document.getElementById('dynamic-sidebar-menu');
-    const menuData = MENU_BY_ROLE[role] || [];
-    let html = '';
-    
-    menuData.forEach((item, index) => {
-        if (item.children) {
-            const submenuId = `submenu-${index}`;
-            html += `
-                <div class="menu-section">
-                    <a href="#" class="menu-link" onclick="toggleSubmenu('${submenuId}')">
-                        <i class="fas ${item.icon}"></i><span>${item.label}</span>
-                        <i class="fas fa-chevron-down arrow" id="arrow-${submenuId}"></i>
-                    </a>
-                    <div class="submenu collapsed" id="${submenuId}">
-                        ${item.children.map(child => `<a href="#" class="submenu-item" data-page="${child.page}">${child.label}</a>`).join('')}
-                    </div>
-                </div>`;
-        } else {
-            html += `
-                <div class="menu-section">
-                    <a href="#" class="menu-link" data-page="${item.page}">
-                        <i class="fas ${item.icon}"></i><span>${item.label}</span>
-                    </a>
-                </div>`;
+        if (snapshot.empty) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada data pelanggan.</td></tr>';
+            return;
         }
-    });
-    
-    menuContainer.innerHTML = html;
-    attachMenuListeners();
-}
 
-function attachMenuListeners() {
-    document.querySelectorAll('[data-page]').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            loadPage(link.getAttribute('data-page'));
-            if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('show');
+        snapshot.forEach((docSnap) => {
+            const data = { idDoc: docSnap.id, ...docSnap.data() };
+            globalPelanggan.push(data);
+
+            const opt = document.createElement("option");
+            opt.value = data.id_pelanggan;
+            opt.textContent = `${data.id_pelanggan} - ${data.nama}`;
+            selectEl.appendChild(opt);
+
+            const tr = document.createElement("tr");
+            tr.className = "border-b hover:bg-slate-50";
+            tr.innerHTML = `
+                <td class="p-3 font-semibold">${data.id_pelanggan}</td>
+                <td class="p-3">${data.nama}</td>
+                <td class="p-3">${data.rt_rw}</td>
+                <td class="p-3">${data.no_hp || '-'}</td>
+                <td class="p-3">
+                    <button onclick="quickInput('${data.id_pelanggan}')" class="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded hover:bg-teal-200">
+                        Catat Air
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
         });
+
+        updateDashboardStats();
     });
 }
 
-// ==================== ROUTING HALAMAN ====================
-async function loadPage(pageName, isLogin = false) {
-    const container = document.getElementById('page-container');
-    const titleElement = document.getElementById('page-title');
-    const sidebar = document.getElementById('sidebar');
-    const topbarActions = document.getElementById('topbarActions');
-    const mainContent = document.getElementById('mainContent');
-    
-    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Memuat...</p></div>';
-
-    try {
-        const response = await fetch(`${BASE_PATH}pages/${pageName}.html`);
-        if (!response.ok) throw new Error('Halaman tidak ditemukan');
-        
-        const html = await response.text();
-        container.innerHTML = html;
-        
-        // Halaman yang harus tampil full-screen (tanpa sidebar)
-        const fullScreenPages = ['login', 'cek-tagihan'];
-        
-        if (fullScreenPages.includes(pageName)) {
-            titleElement.innerText = pageName === 'login' ? 'Login Sistem' : 'Cek Tagihan Pelanggan';
-            sidebar.style.display = 'none';
-            topbarActions.style.display = 'none';
-            mainContent.style.marginLeft = '0';
-            
-            if (pageName === 'login') {
-                setTimeout(() => {
-                    const form = document.getElementById('formLogin');
-                    if (form) form.addEventListener('submit', handleLogin);
-                }, 100);
-            }
-        } else {
-            titleElement.innerText = pageName.replace(/-/g, ' ').toUpperCase();
-            sidebar.style.display = 'flex';
-            topbarActions.style.display = 'flex';
-            mainContent.style.marginLeft = '260px';
-        }
-        
-        document.querySelectorAll('.menu-link, .submenu-item').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('data-page') === pageName) link.classList.add('active');
+// Realtime Listener Data Tagihan
+function listenTagihan() {
+    const colRef = collection(db, "tagihan_air");
+    onSnapshot(colRef, (snapshot) => {
+        globalTagihan = [];
+        snapshot.forEach((docSnap) => {
+            globalTagihan.push({ idDoc: docSnap.id, ...docSnap.data() });
         });
-        
-        attachPageHandlers(pageName);
-    } catch (error) {
-        container.innerHTML = `<div class="content-card"><h3>Error 404</h3><p>Halaman <strong>${pageName}.html</strong> tidak ditemukan di folder pages/.</p></div>`;
-    }
+        renderTableBendahara();
+        updateDashboardStats();
+    });
 }
 
-// ==================== HANDLER KHUSUS HALAMAN ====================
-function attachPageHandlers(pageName) {
-    if (pageName === 'manajemen-user') {
-        const form = document.getElementById('formTambahUser');
-        if (form) {
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                alert('✅ User berhasil ditambahkan! (Simulasi)');
-                renderDaftarUser();
-                form.reset();
-            });
-        }
-        renderDaftarUser();
-    }
-    if (pageName === 'manajemen-petugas') {
-        const form = document.getElementById('formTambahPetugas');
-        if (form) {
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                alert('✅ Petugas berhasil ditambahkan! (Simulasi)');
-                renderDaftarPetugas();
-                form.reset();
-            });
-        }
-        renderDaftarPetugas();
-    }
+function setupEventListeners() {
+    document.getElementById("input-pelanggan").addEventListener("change", (e) => {
+        const idPel = e.target.value;
+        const meterLalu = getMeteranLalu(idPel);
+        document.getElementById("input-meter-lalu").value = meterLalu;
+        calculateInputForm();
+    });
+
+    document.getElementById("input-meter-kini").addEventListener("input", calculateInputForm);
+
+    document.getElementById("form-input-meter").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await simpanCatatanAir();
+    });
+
+    document.getElementById("form-tambah-pelanggan").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await simpanPelangganBaru();
+    });
+
+    document.getElementById("form-cari-warga").addEventListener("submit", (e) => {
+        e.preventDefault();
+        cariTagihanWarga();
+    });
+
+    document.getElementById("filter-periode-bendahara").addEventListener("change", renderTableBendahara);
 }
 
-function renderDaftarUser() {
-    const container = document.getElementById('daftarUser');
-    if (!container) return;
-    const users = USERS_DB.filter(u => ['ketua', 'sekretaris', 'bendahara'].includes(u.role));
-    container.innerHTML = users.map(u => `
-        <div class="user-item">
-            <div class="user-info">
-                <i class="fas fa-user-circle"></i>
-                <div><strong>${u.nama}</strong><div class="user-meta">@${u.username} • <span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span></div></div>
-            </div>
-        </div>`).join('');
-}
-
-function renderDaftarPetugas() {
-    const container = document.getElementById('daftarPetugas');
-    if (!container) return;
-    const petugas = USERS_DB.filter(u => u.role === 'petugas');
-    container.innerHTML = petugas.map(p => `
-        <div class="user-item">
-            <div class="user-info">
-                <i class="fas fa-user-hard-hat"></i>
-                <div><strong>${p.nama}</strong><div class="user-meta">@${p.username} • ${p.zona || 'Belum ada zona'}</div></div>
-            </div>
-        </div>`).join('');
-}
-
-// ==================== UTILITIES ====================
-function getSession() {
-    const data = localStorage.getItem('sipams_session');
-    return data ? JSON.parse(data) : null;
-}
-
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('show');
-}
-
-function toggleSubmenu(menuId) {
-    const submenu = document.getElementById(menuId);
-    const arrow = document.getElementById('arrow-' + menuId);
-    const menuLink = arrow.parentElement;
-    submenu.classList.toggle('collapsed');
-    menuLink.classList.toggle('collapsed');
-}
-
-function updatePeriode() {
-    const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    const sekarang = new Date();
-    const el = document.getElementById('periode-tagihan');
-    if (el) el.innerText = `${bulan[sekarang.getMonth()]} ${sekarang.getFullYear()}`;
-}
-
-function togglePassword() {
-    const passwordInput = document.getElementById('password');
-    const toggleIcon = document.getElementById('toggleIcon');
-    if (!passwordInput || !toggleIcon) return;
+function getMeteranLalu(idPelanggan) {
+    const filtered = globalTagihan
+        .filter(t => t.id_pelanggan === idPelanggan)
+        .sort((a, b) => b.periode.localeCompare(a.periode));
     
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleIcon.classList.remove('fa-eye');
-        toggleIcon.classList.add('fa-eye-slash');
-    } else {
-        passwordInput.type = 'password';
-        toggleIcon.classList.remove('fa-eye-slash');
-        toggleIcon.classList.add('fa-eye');
-    }
+    return filtered.length > 0 ? filtered[0].meter_kini : 0;
 }
 
-// ==================== FITUR CEK TAGIHAN (MODAL & HALAMAN) ====================
-function openPublicCheck() {
-    document.getElementById('publicModal').classList.add('show');
-    document.getElementById('searchPelanggan').focus();
+function calculateInputForm() {
+    const meterLalu = parseFloat(document.getElementById("input-meter-lalu").value) || 0;
+    const meterKini = parseFloat(document.getElementById("input-meter-kini").value) || 0;
+
+    let volume = meterKini - meterLalu;
+    if (volume < 0) volume = 0;
+
+    const totalRp = (volume * TARIF_PER_M3) + BIAYA_BEBAN;
+
+    document.getElementById("calc-m3").textContent = `${volume} m³`;
+    document.getElementById("calc-rp").textContent = `Rp ${totalRp.toLocaleString('id-ID')}`;
 }
 
-function closePublicCheck() {
-    document.getElementById('publicModal').classList.remove('show');
-    document.getElementById('hasilPencarian').innerHTML = '';
-    document.getElementById('searchPelanggan').value = '';
-}
+async function simpanCatatanAir() {
+    const idPel = document.getElementById("input-pelanggan").value;
+    const periode = document.getElementById("input-periode").value;
+    const meterLalu = parseFloat(document.getElementById("input-meter-lalu").value) || 0;
+    const meterKini = parseFloat(document.getElementById("input-meter-kini").value) || 0;
 
-function showPublicCheck() {
-    loadPage('cek-tagihan');
-}
-
-function cariTagihan() {
-    const keyword = document.getElementById('searchPelanggan').value.toLowerCase().trim();
-    const hasilDiv = document.getElementById('hasilPencarian');
-    if (keyword === '') { hasilDiv.innerHTML = '<p style="color:red;">Masukkan kata kunci!</p>'; return; }
-    
-    const hasil = DATA_PELANGGAN_DUMMY.filter(p => p.nama.toLowerCase().includes(keyword) || p.nomor.toLowerCase().includes(keyword));
-    
-    if (hasil.length === 0) {
-        hasilDiv.innerHTML = '<p style="color:red;">Data tidak ditemukan.</p>';
-    } else {
-        let html = '';
-        hasil.forEach(p => {
-            const warna = p.status === 'Lunas' ? 'green' : 'red';
-            html += `<div class="tagihan-item">
-                        <h5>${p.nama} (${p.nomor})</h5>
-                        <p>Pemakaian: ${p.pemakaian} m³</p>
-                        <p style="font-size:18px; font-weight:bold; color:#1abc9c; margin-top:5px;">Rp ${p.total.toLocaleString('id-ID')}</p>
-                        <p>Status: <span style="color:${warna}; font-weight:bold;">${p.status}</span></p>
-                     </div>`;
-        });
-        hasilDiv.innerHTML = html;
-    }
-}
-
-function cekTagihanPublik() {
-    const keyword = document.getElementById('searchNomor').value.toLowerCase().trim();
-    const hasilDiv = document.getElementById('hasilCekTagihan');
-    
-    if (keyword === '') {
-        hasilDiv.innerHTML = '<p style="color: #e74c3c; text-align: center;"><i class="fas fa-exclamation-circle"></i> Masukkan nomor/nama pelanggan!</p>';
+    if (meterKini < meterLalu) {
+        showAlert("Angka meteran baru tidak boleh lebih kecil dari meteran lalu!", "bg-rose-100 text-rose-800");
         return;
     }
-    
-    const hasil = DATA_PELANGGAN_DUMMY.filter(p => p.nama.toLowerCase().includes(keyword) || p.nomor.toLowerCase().includes(keyword));
-    
-    if (hasil.length === 0) {
-        hasilDiv.innerHTML = '<p style="color: #e74c3c; text-align: center;"><i class="fas fa-search"></i> Data pelanggan tidak ditemukan.</p>';
-    } else {
-        let html = '';
-        hasil.forEach(p => {
-            const statusClass = p.status === 'Lunas' ? 'status-lunas' : 'status-belum';
-            const statusIcon = p.status === 'Lunas' ? 'fa-check-circle' : 'fa-times-circle';
-            html += `
-                <div class="tagihan-result">
-                    <h4><i class="fas fa-user"></i> ${p.nama}</h4>
-                    <div class="row"><span class="label">Nomor Pelanggan:</span><span class="value">${p.nomor}</span></div>
-                    <div class="row"><span class="label">Alamat:</span><span class="value">${p.alamat}</span></div>
-                    <div class="row"><span class="label">Periode:</span><span class="value">${p.periode}</span></div>
-                    <div class="row"><span class="label">Pemakaian:</span><span class="value">${p.pemakaian} m³</span></div>
-                    <div class="row"><span class="label">Status:</span><span class="${statusClass}"><i class="fas ${statusIcon}"></i> ${p.status}</span></div>
-                    <div class="total"><div class="row"><span>Total Tagihan:</span><span>Rp ${p.total.toLocaleString('id-ID')}</span></div></div>
-                </div>`;
+
+    const pelData = globalPelanggan.find(p => p.id_pelanggan === idPel);
+    const volume = meterKini - meterLalu;
+    const totalBayar = (volume * TARIF_PER_M3) + BIAYA_BEBAN;
+
+    try {
+        await addDoc(collection(db, "tagihan_air"), {
+            id_pelanggan: idPel,
+            nama_pelanggan: pelData ? pelData.nama : "-",
+            rt_rw: pelData ? pelData.rt_rw : "-",
+            periode: periode,
+            meter_lalu: meterLalu,
+            meter_kini: meterKini,
+            pemakaian_m3: volume,
+            total_bayar: totalBayar,
+            status: "Belum Lunas",
+            created_at: serverTimestamp()
         });
-        hasilDiv.innerHTML = html;
+
+        showAlert("Data catatan air berhasil disimpan ke Cloud!", "bg-emerald-100 text-emerald-800");
+        document.getElementById("form-input-meter").reset();
+        document.getElementById("calc-m3").textContent = "0 m³";
+        document.getElementById("calc-rp").textContent = "Rp 0";
+    } catch (err) {
+        console.error(err);
+        showAlert("Gagal menyimpan data.", "bg-rose-100 text-rose-800");
     }
 }
 
-// Event Listeners Global
-document.addEventListener('keypress', function(e) {
-    if (e.target && e.target.id === 'searchNomor' && e.key === 'Enter') {
-        cekTagihanPublik();
-    }
-});
+async function simpanPelangganBaru() {
+    const idPel = document.getElementById("new-id-pelanggan").value.trim();
+    const nama = document.getElementById("new-nama").value.trim();
+    const rt = document.getElementById("new-rt").value.trim();
+    const hp = document.getElementById("new-hp").value.trim();
 
-const publicModal = document.getElementById('publicModal');
-if (publicModal) {
-    publicModal.addEventListener('click', function(e) {
-        if (e.target === this) closePublicCheck();
+    try {
+        await addDoc(collection(db, "pelanggan"), {
+            id_pelanggan: idPel,
+            nama: nama,
+            rt_rw: rt,
+            no_hp: hp
+        });
+        showAlert("Pelanggan baru berhasil ditambahkan!", "bg-emerald-100 text-emerald-800");
+        window.toggleModalPelanggan(false);
+        document.getElementById("form-tambah-pelanggan").reset();
+    } catch (err) {
+        console.error(err);
+        showAlert("Gagal menambah pelanggan.", "bg-rose-100 text-rose-800");
+    }
+}
+
+window.bayarTagihan = async (idDoc) => {
+    if (!confirm("Konfirmasi pembayaran tagihan ini menjadi LUNAS?")) return;
+    try {
+        const docRef = doc(db, "tagihan_air", idDoc);
+        await updateDoc(docRef, {
+            status: "Lunas",
+            tanggal_bayar: new Date().toISOString()
+        });
+        showAlert("Tagihan diperbarui menjadi LUNAS.", "bg-emerald-100 text-emerald-800");
+    } catch (err) {
+        console.error(err);
+        showAlert("Gagal memperbarui status.", "bg-rose-100 text-rose-800");
+    }
+};
+
+function renderTableBendahara() {
+    const filterBulan = document.getElementById("filter-periode-bendahara").value;
+    const body = document.getElementById("table-tagihan-body");
+    body.innerHTML = "";
+
+    const filtered = globalTagihan.filter(t => !filterBulan || t.periode === filterBulan);
+
+    if (filtered.length === 0) {
+        body.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400">Tidak ada data tagihan pada periode ini.</td></tr>';
+        return;
+    }
+
+    filtered.forEach((t) => {
+        const tr = document.createElement("tr");
+        tr.className = "border-b hover:bg-slate-50";
+        const isLunas = t.status === "Lunas";
+
+        tr.innerHTML = `
+            <td class="p-3 font-medium">${t.periode}</td>
+            <td class="p-3"><div class="font-bold text-slate-800">${t.nama_pelanggan}</div><div class="text-xs text-slate-400">${t.id_pelanggan}</div></td>
+            <td class="p-3">${t.rt_rw || '-'}</td>
+            <td class="p-3 text-right">${t.meter_lalu} / ${t.meter_kini}</td>
+            <td class="p-3 text-right font-semibold">${t.pemakaian_m3} m³</td>
+            <td class="p-3 text-right font-bold text-teal-700">Rp ${t.total_bayar.toLocaleString('id-ID')}</td>
+            <td class="p-3 text-center">
+                <span class="px-2.5 py-1 text-xs font-bold rounded-full ${isLunas ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                    ${t.status}
+                </span>
+            </td>
+            <td class="p-3 text-center no-print">
+                ${!isLunas ? `<button onclick="bayarTagihan('${t.idDoc}')" class="bg-teal-600 text-white text-xs px-2.5 py-1 rounded hover:bg-teal-700">Tandai Lunas</button>` : '<i class="fa-solid fa-check text-emerald-600"></i>'}
+            </td>
+        `;
+        body.appendChild(tr);
     });
 }
+
+function updateDashboardStats() {
+    let totalRpLunas = 0;
+    let totalRpHutang = 0;
+    let totalM3 = 0;
+
+    globalTagihan.forEach(t => {
+        totalM3 += (t.pemakaian_m3 || 0);
+        if (t.status === "Lunas") {
+            totalRpLunas += (t.total_bayar || 0);
+        } else {
+            totalRpHutang += (t.total_bayar || 0);
+        }
+    });
+
+    document.getElementById("stat-total-penerimaan").textContent = `Rp ${totalRpLunas.toLocaleString('id-ID')}`;
+    document.getElementById("stat-total-tunggakan").textContent = `Rp ${totalRpHutang.toLocaleString('id-ID')}`;
+    document.getElementById("stat-total-m3").textContent = `${totalM3} m³`;
+    document.getElementById("stat-total-pelanggan").textContent = globalPelanggan.length;
+}
+
+function cariTagihanWarga() {
+    const kw = document.getElementById("cari-keyword").value.trim().toLowerCase();
+    const resultDiv = document.getElementById("hasil-pencarian-warga");
+
+    const found = globalTagihan.find(t => 
+        t.id_pelanggan.toLowerCase() === kw || t.nama_pelanggan.toLowerCase().includes(kw)
+    );
+
+    if (!found) {
+        showAlert("Data tagihan tidak ditemukan.", "bg-rose-100 text-rose-800");
+        resultDiv.classList.add("hidden");
+        return;
+    }
+
+    resultDiv.classList.remove("hidden");
+    document.getElementById("warga-id").textContent = found.id_pelanggan;
+    document.getElementById("warga-nama").textContent = found.nama_pelanggan;
+    document.getElementById("warga-rt").textContent = found.rt_rw || '-';
+    document.getElementById("warga-periode").textContent = found.periode;
+    document.getElementById("warga-meter-lalu").textContent = `${found.meter_lalu} m³`;
+    document.getElementById("warga-meter-ini").textContent = `${found.meter_kini} m³`;
+    document.getElementById("warga-m3").textContent = `${found.pemakaian_m3} m³`;
+    document.getElementById("warga-total-rp").textContent = `Rp ${found.total_bayar.toLocaleString('id-ID')}`;
+
+    const badge = document.getElementById("warga-status-badge");
+    badge.textContent = found.status;
+    badge.className = `px-3 py-1 text-xs font-semibold rounded-full ${found.status === 'Lunas' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`;
+}
+
+// Global Nav & Modal Export Functions
+window.exportToExcel = () => {
+    if (globalTagihan.length === 0) {
+        showAlert("Tidak ada data untuk di-export.", "bg-rose-100 text-rose-800");
+        return;
+    }
+
+    const dataExcel = globalTagihan.map(t => ({
+        "Periode": t.periode,
+        "ID Pelanggan": t.id_pelanggan,
+        "Nama Pelanggan": t.nama_pelanggan,
+        "RT/RW": t.rt_rw,
+        "Meter Lalu": t.meter_lalu,
+        "Meter Kini": t.meter_kini,
+        "Pemakaian (m3)": t.pemakaian_m3,
+        "Total Tagihan (Rp)": t.total_bayar,
+        "Status": t.status
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Air PAMSIMAS");
+    XLSX.writeFile(workbook, "Laporan_PAMSIMAS_Desa_Lamanda.xlsx");
+};
+
+window.switchTab = (tabName) => {
+    document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+    document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("bg-teal-800", "text-white"));
+
+    document.getElementById(`sec-${tabName}`).classList.remove("hidden");
+    document.getElementById(`tab-${tabName}`).classList.add("bg-teal-800", "text-white");
+};
+
+window.toggleModalPelanggan = (show) => {
+    document.getElementById("modal-pelanggan").classList.toggle("hidden", !show);
+};
+
+window.quickInput = (idPel) => {
+    window.switchTab("petugas");
+    document.getElementById("input-pelanggan").value = idPel;
+    document.getElementById("input-pelanggan").dispatchEvent(new Event("change"));
+};
+
+function showAlert(msg, bgClass) {
+    const box = document.getElementById("alert-box");
+    box.className = `mb-4 p-4 rounded-lg flex items-center justify-between ${bgClass}`;
+    document.getElementById("alert-msg").textContent = msg;
+    box.classList.remove("hidden");
+    setTimeout(() => box.classList.add("hidden"), 4000);
+}
+
+window.closeAlert = () => {
+    document.getElementById("alert-box").classList.add("hidden");
+};
