@@ -8,14 +8,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS (ke folder css/) -->
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
     <!-- SheetJS Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.min.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
-    <!-- HEADER / NAVBAR BIRU SAMUDRA (OCEAN BLUE) -->
+    <!-- HEADER / NAVBAR BIRU SAMUDRA -->
     <header class="bg-[#0e6396] text-white shadow-md no-print sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <!-- Logo & Judul -->
@@ -29,9 +29,8 @@
                 </div>
             </div>
 
-            <!-- Navigasi Role / Portal (Desain Persis Gambar Referensi) -->
+            <!-- Navigasi Dropdown Peran / Portal -->
             <div class="flex items-center gap-3">
-                <!-- Select Dropdown Portal Peran -->
                 <div class="relative">
                     <select id="role-selector" onchange="switchTabByRole(this.value)" class="bg-[#0b4f78] text-white text-sm font-semibold px-4 py-2 pr-8 rounded-xl border border-blue-400/30 focus:outline-none focus:ring-2 focus:ring-blue-300 appearance-none cursor-pointer shadow-sm">
                         <option value="warga">🌐 Portal Warga (Cek Tagihan)</option>
@@ -54,10 +53,10 @@
             <button onclick="closeAlert()" class="font-bold ml-4 text-lg">&times;</button>
         </div>
 
-        <!-- TAB 1: WARGA (HERO BANNER BIRU AIR PERSIS GAMBAR) -->
+        <!-- TAB 1: WARGA -->
         <section id="sec-warga" class="tab-content space-y-6">
             
-            <!-- Hero Banner Biru Pekat (Ocean Blue) -->
+            <!-- Hero Banner Biru Pekat -->
             <div class="bg-[#026aa7] text-white rounded-2xl p-8 shadow-md text-center relative overflow-hidden">
                 <div class="relative z-10 max-w-2xl mx-auto">
                     <h2 class="text-3xl font-extrabold mb-3 leading-tight">Cek Tagihan Air PAMSIMAS Online</h2>
@@ -65,7 +64,6 @@
                         Masukkan ID Pelanggan atau Nama Anda untuk melihat rincian pemakaian dan status pembayaran bulan ini secara transparan.
                     </p>
                 </div>
-                <!-- Hiasan Watermark Tetesan Air -->
                 <i class="fa-solid fa-droplet absolute -bottom-10 -right-6 text-blue-400/20 text-9xl"></i>
             </div>
 
