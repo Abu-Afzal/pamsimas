@@ -6,11 +6,18 @@ import {
     addDoc, 
     updateDoc, 
     doc, 
+    getDoc,
     onSnapshot,
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// 1. Firebase Configuration Anda
+// Konfigurasi Firebase Anda
 const firebaseConfig = {
     apiKey: "AIzaSyBs5FCHTWJrL15RRdnJbEsvnsZvm90Xc8s",
     authDomain: "pamsimas-c5545.firebaseapp.com",
@@ -21,19 +28,18 @@ const firebaseConfig = {
     measurementId: "G-ELFLYV6687"
 };
 
-// Inisialisasi Firebase & Firestore
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// Pengaturan Tarif Air PAMSIMAS Desa Lamanda
-const TARIF_PER_M3 = 2500; // Rp 2.500 / m3
-const BIAYA_BEBAN = 5000;   // Rp 5.000 (Abonemen)
+// Parameter Tarif
+const TARIF_PER_M3 = 2500;
+const BIAYA_BEBAN = 5000;
 
-// State Data Lokal
 let globalPelanggan = [];
 let globalTagihan = [];
+let currentUserRole = null;
 
-// Event Inisialisasi Saat Halaman Dimuat
 document.addEventListener("DOMContentLoaded", () => {
     initApp();
     setupEventListeners();
@@ -45,12 +51,88 @@ function initApp() {
     document.getElementById("input-periode").value = currentMonth;
     document.getElementById("filter-periode-bendahara").value = currentMonth;
 
-    // Realtime Listener
     listenPelanggan();
     listenTagihan();
+    setupAuthListener();
 }
 
-// Realtime Listener Data Pelanggan
+// -------------------------------------------------------------
+// FIREBASE AUTH & ROLE MANAGEMENT
+// -------------------------------------------------------------
+
+function setupAuthListener() {
+    onAuthStateChanged(auth, async (user) => {
+        const authContainer = document.getElementById("auth-action-container");
+        
+        if (user) {
+            // Ambil data role dari koleksi 'users' di Firestore
+            const userDocRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userDocRef);
+
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                currentUserRole = userData.role; // 'petugas', 'bendahara', 'ketua'
+                
+                // Tampilkan tombol Logout dan Info User
+                authContainer.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-blue-100 hidden sm:inline">Halo, <b>${userData.nama}</b></span>
+                        <button onclick="handleLogout()" class="bg-rose-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-rose-700 transition shadow">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </button>
+                    </div>
+                `;
+
+                applyRoleAccess(currentUserRole);
+            } else {
+                showAlert("Akun terautentikasi tetapi role tidak ditemukan di database.", "bg-rose-100 text-rose-800");
+                signOut(auth);
+            }
+        } else {
+            currentUserRole = null;
+            authContainer.innerHTML = `
+                <button onclick="toggleModalLogin(true)" class="bg-white text-[#0e6396] px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-50 transition flex items-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> Login Pengurus
+                </button>
+            `;
+            applyRoleAccess(null);
+        }
+    });
+}
+
+function applyRoleAccess(role) {
+    const btnPetugas = document.getElementById("tab-petugas");
+    const btnBendahara = document.getElementById("tab-bendahara");
+    const btnLaporan = document.getElementById("tab-laporan");
+
+    // Sembunyikan semua menu internal dulu
+    btnPetugas.classList.add("hidden");
+    btnBendahara.classList.add("hidden");
+    btnLaporan.classList.add("hidden");
+
+    if (role === "petugas") {
+        btnPetugas.classList.remove("hidden");
+        switchTab("petugas");
+    } else if (role === "bendahara") {
+        btnBendahara.classList.remove("hidden");
+        switchTab("bendahara");
+    } else if (role === "ketua" || role === "sekretaris") {
+        btnLaporan.classList.remove("hidden");
+        switchTab("laporan");
+    } else {
+        switchTab("warga");
+    }
+}
+
+window.handleLogout = async () => {
+    await signOut(auth);
+    showAlert("Anda telah keluar dari sistem.", "bg-blue-100 text-blue-800");
+};
+
+// -------------------------------------------------------------
+// FIRESTORE LISTENERS & EVENT HANDLERS
+// -------------------------------------------------------------
+
 function listenPelanggan() {
     const colRef = collection(db, "pelanggan");
     onSnapshot(colRef, (snapshot) => {
@@ -83,7 +165,7 @@ function listenPelanggan() {
                 <td class="p-3">${data.rt_rw}</td>
                 <td class="p-3">${data.no_hp || '-'}</td>
                 <td class="p-3">
-                    <button onclick="quickInput('${data.id_pelanggan}')" class="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded hover:bg-teal-200">
+                    <button onclick="quickInput('${data.id_pelanggan}')" class="text-xs bg-blue-100 text-[#0079bf] px-2 py-1 rounded hover:bg-blue-200 font-semibold">
                         Catat Air
                     </button>
                 </td>
@@ -95,7 +177,6 @@ function listenPelanggan() {
     });
 }
 
-// Realtime Listener Data Tagihan
 function listenTagihan() {
     const colRef = collection(db, "tagihan_air");
     onSnapshot(colRef, (snapshot) => {
@@ -109,6 +190,23 @@ function listenTagihan() {
 }
 
 function setupEventListeners() {
+    // Form Login Submit
+    document.getElementById("form-login").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("login-email").value;
+        const pass = document.getElementById("login-password").value;
+
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+            toggleModalLogin(false);
+            showAlert("Login berhasil! Selamat datang di Panel Pengurus.", "bg-emerald-100 text-emerald-800");
+            document.getElementById("form-login").reset();
+        } catch (err) {
+            console.error(err);
+            showAlert("Gagal Login: Periksa kembali Email dan Password Anda.", "bg-rose-100 text-rose-800");
+        }
+    });
+
     document.getElementById("input-pelanggan").addEventListener("change", (e) => {
         const idPel = e.target.value;
         const meterLalu = getMeteranLalu(idPel);
@@ -186,7 +284,7 @@ async function simpanCatatanAir() {
             created_at: serverTimestamp()
         });
 
-        showAlert("Data catatan air berhasil disimpan ke Cloud!", "bg-emerald-100 text-emerald-800");
+        showAlert("Data catatan air berhasil disimpan!", "bg-emerald-100 text-emerald-800");
         document.getElementById("form-input-meter").reset();
         document.getElementById("calc-m3").textContent = "0 m³";
         document.getElementById("calc-rp").textContent = "Rp 0";
@@ -210,7 +308,7 @@ async function simpanPelangganBaru() {
             no_hp: hp
         });
         showAlert("Pelanggan baru berhasil ditambahkan!", "bg-emerald-100 text-emerald-800");
-        window.toggleModalPelanggan(false);
+        toggleModalPelanggan(false);
         document.getElementById("form-tambah-pelanggan").reset();
     } catch (err) {
         console.error(err);
@@ -256,14 +354,14 @@ function renderTableBendahara() {
             <td class="p-3">${t.rt_rw || '-'}</td>
             <td class="p-3 text-right">${t.meter_lalu} / ${t.meter_kini}</td>
             <td class="p-3 text-right font-semibold">${t.pemakaian_m3} m³</td>
-            <td class="p-3 text-right font-bold text-teal-700">Rp ${t.total_bayar.toLocaleString('id-ID')}</td>
+            <td class="p-3 text-right font-bold text-[#0079bf]">Rp ${t.total_bayar.toLocaleString('id-ID')}</td>
             <td class="p-3 text-center">
                 <span class="px-2.5 py-1 text-xs font-bold rounded-full ${isLunas ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
                     ${t.status}
                 </span>
             </td>
             <td class="p-3 text-center no-print">
-                ${!isLunas ? `<button onclick="bayarTagihan('${t.idDoc}')" class="bg-teal-600 text-white text-xs px-2.5 py-1 rounded hover:bg-teal-700">Tandai Lunas</button>` : '<i class="fa-solid fa-check text-emerald-600"></i>'}
+                ${!isLunas ? `<button onclick="bayarTagihan('${t.idDoc}')" class="bg-[#0079bf] text-white text-xs px-2.5 py-1.5 rounded-lg hover:bg-[#026aa7]">Tandai Lunas</button>` : '<i class="fa-solid fa-check text-emerald-600 font-bold"></i>'}
             </td>
         `;
         body.appendChild(tr);
@@ -319,13 +417,37 @@ function cariTagihanWarga() {
     badge.className = `px-3 py-1 text-xs font-semibold rounded-full ${found.status === 'Lunas' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`;
 }
 
-// Global Nav & Modal Export Functions
+// Global UI Helpers
+window.switchTab = (tabName) => {
+    document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+    document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("bg-[#0b4f78]", "text-white"));
+
+    const targetSec = document.getElementById(`sec-${tabName}`);
+    const targetBtn = document.getElementById(`tab-${tabName}`);
+    
+    if (targetSec) targetSec.classList.remove("hidden");
+    if (targetBtn) targetBtn.classList.add("bg-[#0b4f78]", "text-white");
+};
+
+window.toggleModalLogin = (show) => {
+    document.getElementById("modal-login").classList.toggle("hidden", !show);
+};
+
+window.toggleModalPelanggan = (show) => {
+    document.getElementById("modal-pelanggan").classList.toggle("hidden", !show);
+};
+
+window.quickInput = (idPel) => {
+    window.switchTab("petugas");
+    document.getElementById("input-pelanggan").value = idPel;
+    document.getElementById("input-pelanggan").dispatchEvent(new Event("change"));
+};
+
 window.exportToExcel = () => {
     if (globalTagihan.length === 0) {
         showAlert("Tidak ada data untuk di-export.", "bg-rose-100 text-rose-800");
         return;
     }
-
     const dataExcel = globalTagihan.map(t => ({
         "Periode": t.periode,
         "ID Pelanggan": t.id_pelanggan,
@@ -344,27 +466,9 @@ window.exportToExcel = () => {
     XLSX.writeFile(workbook, "Laporan_PAMSIMAS_Desa_Lamanda.xlsx");
 };
 
-window.switchTab = (tabName) => {
-    document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
-    document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("bg-teal-800", "text-white"));
-
-    document.getElementById(`sec-${tabName}`).classList.remove("hidden");
-    document.getElementById(`tab-${tabName}`).classList.add("bg-teal-800", "text-white");
-};
-
-window.toggleModalPelanggan = (show) => {
-    document.getElementById("modal-pelanggan").classList.toggle("hidden", !show);
-};
-
-window.quickInput = (idPel) => {
-    window.switchTab("petugas");
-    document.getElementById("input-pelanggan").value = idPel;
-    document.getElementById("input-pelanggan").dispatchEvent(new Event("change"));
-};
-
 function showAlert(msg, bgClass) {
     const box = document.getElementById("alert-box");
-    box.className = `mb-4 p-4 rounded-lg flex items-center justify-between ${bgClass}`;
+    box.className = `mb-6 p-4 rounded-xl shadow-sm flex items-center justify-between ${bgClass}`;
     document.getElementById("alert-msg").textContent = msg;
     box.classList.remove("hidden");
     setTimeout(() => box.classList.add("hidden"), 4000);
