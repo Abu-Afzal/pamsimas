@@ -1,366 +1,248 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAMSIMAS Desa Lamanda - Sistem Informasi Pengelolaan Air Clean & Digital</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css">
-    <!-- SheetJS Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Struktur Organisasi MA Hasyim Asy’ari</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+
+body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:#e2e8f0; padding:24px 12px; text-align:center; }
+
+.action-buttons { display:flex; gap:12px; justify-content:center; margin-bottom:20px; flex-wrap:wrap; }
+.btn { padding:12px 24px; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; color:#fff; box-shadow:0 2px 4px rgba(0,0,0,.1); transition:all .2s; }
+.btn:hover { transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,.15); }
+.btn-pdf { background:#ef4444; } .btn-word { background:#2563eb; } .btn-print { background:#059669; }
+
+/* ===== KERTAS A4 LANDSCAPE (297 x 210 mm), margin 10 mm tiap sisi ===== */
+.sheet { width:297mm; height:210mm; padding:10mm; margin:0 auto; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,.2); }
+.page { width:277mm; height:189mm; display:flex; flex-direction:column; gap:4mm; text-align:center; }
+
+.kop-container { display:block; position:relative; width:100%; border-radius:3mm; overflow:hidden; flex:none; }
+.kop-logo { position:absolute; top:50%; transform:translateY(-50%); height:23mm; width:auto; z-index:2; }
+.kop-logo.kiri { left:5mm; }
+.kop-logo.kanan { right:5mm; }
+.kop-line-1 { background:linear-gradient(135deg,#1e40af 0%,#0891b2 100%); padding:3.5mm 10mm; }
+.kop-line-1 h1 { color:#fff; font-size:25pt; font-weight:700; letter-spacing:2px; margin:0; white-space:nowrap; }
+.kop-line-2 { background:linear-gradient(135deg,#059669 0%,#10b981 100%); padding:2.5mm 10mm; }
+.kop-line-2 h2 { color:#fff; font-size:17pt; font-weight:600; letter-spacing:1px; margin:0; white-space:nowrap; }
+
+.tree { flex:1; min-height:0; width:100%; display:flex; flex-direction:column; align-items:center; gap:4mm; }
+
+.node { flex:none; border-radius:3mm; padding:2mm 5mm; border:0.8mm solid; display:flex; flex-direction:column; justify-content:center; }
+.node h3 { font-size:9.5pt; text-transform:uppercase; letter-spacing:1px; font-weight:600; margin:0 0 1mm 0; }
+.node .name { font-size:16pt; font-weight:700; outline:none; line-height:1.2; }
+.level-1 .node { width:120mm; }
+.level-2 { display:flex; gap:10mm; justify-content:center; }
+.level-2 .node { width:100mm; }
+.level-3-nodes { display:flex; gap:8mm; justify-content:center; }
+.level-waka { display:flex; gap:7mm; justify-content:center; }
+.level-waka .node { width:64mm; }
+.level-waka .name { font-size:14pt; }
+.level-3-nodes .node { width:100mm; }
+
+.node.yayasan { background:#1e40af; border-color:#1e3a8a; color:#fff; } .node.yayasan h3 { color:#bfdbfe; }
+.node.komite { background:#059669; border-color:#047857; color:#fff; } .node.komite h3 { color:#a7f3d0; }
+.node.kepala { background:#0891b2; border-color:#0e7490; color:#fff; } .node.kepala h3 { color:#cffafe; }
+.node.wakil { background:#06b6d4; border-color:#0891b2; color:#fff; } .node.wakil h3 { color:#cffafe; }
+.node.perpustakaan { background:#8b5cf6; border-color:#7c3aed; color:#fff; } .node.perpustakaan h3 { color:#ddd6fe; }
+.node.bendahara { background:#f59e0b; border-color:#d97706; color:#fff; } .node.bendahara h3 { color:#fef3c7; }
+
+/* Baris bawah: mengisi seluruh sisa tinggi kertas */
+.level-3 { flex:1; min-height:0; width:100%; display:flex; gap:8mm; }
+.group { border-radius:3mm; padding:3.5mm 5mm 4mm; border:0.8mm solid; display:flex; flex-direction:column; min-height:0; }
+.group.wali-kelas { width:88mm; flex:none; background:#ecfdf5; border-color:#10b981; }
+.group.dewan-guru { flex:1; background:#eff6ff; border-color:#3b82f6; }
+.group h4 { font-size:14pt; font-weight:700; border-bottom:0.8mm solid; padding-bottom:1.5mm; margin-bottom:3mm; text-align:center; outline:none; }
+.group.wali-kelas h4 { color:#047857; border-bottom-color:#10b981; }
+.group.dewan-guru h4 { color:#1e40af; border-bottom-color:#3b82f6; }
+
+.items { flex:1; min-height:0; display:flex; flex-direction:column; gap:2.5mm; }
+.items.grid { display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:2.5mm 4mm; }
+.list-item { flex:1; display:flex; align-items:center; gap:1.5mm; background:#fff; padding:0 3mm; border-radius:2mm; border-left:1.5mm solid; text-align:left; font-size:13pt; }
+.wali-kelas .list-item { border-left-color:#10b981; font-size:15pt; }
+.dewan-guru .list-item { border-left-color:#3b82f6; }
+.list-item span { font-weight:600; color:#0f172a; outline:none; }
+
+.hint { margin-top:20px; padding:12px 20px; background:#fef3c7; color:#92400e; border-radius:8px; font-size:13px; display:inline-block; border:2px solid #fbbf24; }
+
+/* ===== PRINT: margin 10 mm, konten memenuhi 277 x 189 mm ===== */
+@page { size:A4 landscape; margin:0; }
+@media print {
+  html, body { width:297mm; height:209mm; margin:0 !important; padding:0 !important; background:#fff !important; overflow:hidden; }
+  .no-print { display:none !important; }
+  .sheet { zoom:1 !important; width:297mm; height:209mm; padding:10mm; margin:0; box-shadow:none; overflow:hidden; }
+}
+</style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+<body>
 
-    <!-- HEADER / NAVBAR -->
-    <header class="bg-[#0e6396] text-white shadow-md no-print sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <!-- Logo & Judul -->
-            <div class="flex items-center space-x-3">
-                <div class="bg-white text-[#0e6396] p-2.5 rounded-xl font-bold text-2xl shadow-sm">
-                    <i class="fa-solid fa-droplet"></i>
-                </div>
-                <div>
-                    <h1 class="font-extrabold text-xl tracking-wide leading-none">PAMSIMAS DESA LAMANDA</h1>
-                    <p class="text-xs text-blue-100 mt-1">Sistem Informasi Pengelolaan Air Clean & Digital</p>
-                </div>
-            </div>
+<div class="action-buttons no-print">
+  <button class="btn btn-pdf" onclick="downloadPDF()">📄 Download PDF</button>
+  <button class="btn btn-word" onclick="downloadWord()">📝 Download Word</button>
+  <button class="btn btn-print" onclick="window.print()">🖨️ Print</button>
+</div>
 
-            <!-- Navigasi & Status Auth -->
-            <div class="flex items-center gap-3">
-                <nav class="hidden md:flex items-center space-x-2 text-sm font-medium" id="nav-menu">
-                    <button onclick="switchTab('warga')" id="tab-warga" class="nav-btn bg-[#0b4f78] text-white px-3.5 py-2 rounded-xl transition shadow flex items-center gap-2">
-                        <i class="fa-solid fa-magnifying-glass"></i> Cek Tagihan (Warga)
-                    </button>
-                    <!-- Menu Internal Berdasarkan Role -->
-                    <button onclick="switchTab('petugas')" id="tab-petugas" class="nav-btn text-blue-100 hover:bg-[#0b4f78] px-3.5 py-2 rounded-xl transition hidden items-center gap-2">
-                        <i class="fa-solid fa-pen-to-square"></i> Input Meteran
-                    </button>
-                    <button onclick="switchTab('bendahara')" id="tab-bendahara" class="nav-btn text-blue-100 hover:bg-[#0b4f78] px-3.5 py-2 rounded-xl transition hidden items-center gap-2">
-                        <i class="fa-solid fa-receipt"></i> Kelola Tagihan
-                    </button>
-                    <button onclick="switchTab('laporan')" id="tab-laporan" class="nav-btn text-blue-100 hover:bg-[#0b4f78] px-3.5 py-2 rounded-xl transition hidden items-center gap-2">
-                        <i class="fa-solid fa-chart-line"></i> Laporan
-                    </button>
-                    <button onclick="switchTab('admin')" id="tab-admin" class="nav-btn text-blue-100 hover:bg-[#0b4f78] px-3.5 py-2 rounded-xl transition hidden items-center gap-2">
-                        <i class="fa-solid fa-users-gear"></i> Manajemen User
-                    </button>
-                </nav>
+<div class="sheet" id="sheet">
+ <div class="page">
 
-                <!-- Tombol Auth -->
-                <div id="auth-action-container">
-                    <button onclick="toggleModalLogin(true)" class="bg-white text-[#0e6396] px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-50 transition flex items-center gap-2">
-                        <i class="fa-solid fa-right-to-bracket"></i> Login Pengurus
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
+  <div class="kop-container">
+    <img class="kop-logo kiri" alt="Logo Kemenag" src="logo/logo-kemenag.png">
+    <img class="kop-logo kanan" alt="Logo MA Hasyim Asy’ari" src="logo/logo-ma.png">
+    <div class="kop-line-1"><h1 contenteditable="true">STRUKTUR ORGANISASI MA HASYIM ASY’ARI</h1></div>
+    <div class="kop-line-2"><h2 contenteditable="true">YAYASAN AL-HUFFADH BUTTA TOA</h2></div>
+  </div>
 
-    <!-- MAIN CONTENT CONTAINER -->
-    <main class="container mx-auto px-4 py-6 flex-1 max-w-5xl">
-
-        <!-- Notification Banner -->
-        <div id="alert-box" class="hidden mb-6 p-4 rounded-xl shadow-sm flex items-center justify-between transition-all">
-            <span id="alert-msg" class="font-medium"></span>
-            <button onclick="closeAlert()" class="font-bold ml-4 text-lg">&times;</button>
-        </div>
-
-        <!-- TAB 1: WARGA (PUBLIC) -->
-        <section id="sec-warga" class="tab-content space-y-6">
-            <div class="bg-[#026aa7] text-white rounded-2xl p-8 shadow-md text-center relative overflow-hidden">
-                <div class="relative z-10 max-w-2xl mx-auto">
-                    <h2 class="text-3xl font-extrabold mb-3 leading-tight">Cek Tagihan Air PAMSIMAS Online</h2>
-                    <p class="text-blue-100 text-sm leading-relaxed">
-                        Masukkan ID Pelanggan atau Nama Anda untuk melihat rincian pemakaian dan status pembayaran bulan ini secara transparan.
-                    </p>
-                </div>
-                <i class="fa-solid fa-droplet absolute -bottom-10 -right-6 text-blue-400/20 text-9xl"></i>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
-                <h3 class="text-base font-bold text-slate-700 mb-4 text-center">Cari Tagihan Pelanggan</h3>
-                <form id="form-cari-warga" class="flex gap-2">
-                    <div class="relative flex-1">
-                        <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" id="cari-keyword" placeholder="Ketik ID Pelanggan (contoh: LMD-001) atau Nama..." required class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0079bf] text-sm">
-                    </div>
-                    <button type="submit" class="bg-[#0079bf] text-white px-6 py-3 rounded-xl hover:bg-[#026aa7] transition flex items-center gap-2 font-semibold text-sm shadow">
-                        <i class="fa-solid fa-search"></i> Cari
-                    </button>
-                </form>
-
-                <div id="hasil-pencarian-warga" class="hidden mt-6 pt-6 border-t border-slate-200">
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 class="font-bold text-slate-800">Rincian Tagihan</h4>
-                        <span id="warga-status-badge" class="px-3 py-1 text-xs font-bold rounded-full"></span>
-                    </div>
-                    <div class="bg-slate-50 p-4 rounded-xl space-y-2.5 text-sm border border-slate-200/60">
-                        <div class="flex justify-between"><span class="text-slate-500">ID Pelanggan:</span><span id="warga-id" class="font-bold"></span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Nama Pelanggan:</span><span id="warga-nama" class="font-bold"></span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">RT / RW:</span><span id="warga-rt"></span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Periode:</span><span id="warga-periode" class="font-bold text-[#0079bf]"></span></div>
-                        <hr class="my-2 border-slate-200">
-                        <div class="flex justify-between"><span class="text-slate-500">Meteran Lalu:</span><span id="warga-meter-lalu"></span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Meteran Ini:</span><span id="warga-meter-ini"></span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">Total Pemakaian:</span><span id="warga-m3" class="font-bold"></span></div>
-                        <hr class="my-2 border-slate-200">
-                        <div class="flex justify-between text-base font-extrabold"><span class="text-slate-700">Total Tagihan:</span><span id="warga-total-rp" class="text-[#0079bf]"></span></div>
-                    </div>
-                    <button onclick="window.print()" class="w-full mt-4 bg-slate-800 text-white py-3 rounded-xl hover:bg-slate-900 transition flex items-center justify-center gap-2 text-sm font-semibold shadow">
-                        <i class="fa-solid fa-print"></i> Cetak Struk / Tagihan
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 2: PETUGAS (INPUT METERAN) -->
-        <section id="sec-petugas" class="tab-content hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-1">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-gauge text-[#0079bf]"></i> Catat Pemakaian Air
-                    </h2>
-                    <form id="form-input-meter" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Pilih Pelanggan</label>
-                            <select id="input-pelanggan" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#0079bf] text-sm">
-                                <option value="">-- Pilih Pelanggan --</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Bulan & Tahun</label>
-                            <input type="month" id="input-periode" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#0079bf] text-sm">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Meteran Lalu (m³)</label>
-                                <input type="number" id="input-meter-lalu" readonly class="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-sm font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Meteran Kini (m³)</label>
-                                <input type="number" id="input-meter-kini" min="0" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#0079bf] text-sm font-bold">
-                            </div>
-                        </div>
-
-                        <div class="bg-blue-50 p-3.5 rounded-xl border border-blue-200/80 space-y-1 text-xs text-blue-900">
-                            <div class="flex justify-between"><span>Volume Pemakaian:</span><span id="calc-m3" class="font-bold">0 m³</span></div>
-                            <div class="flex justify-between"><span>Estimasi Tagihan:</span><span id="calc-rp" class="font-bold">Rp 0</span></div>
-                        </div>
-
-                        <button type="submit" class="w-full bg-[#0079bf] text-white py-3 rounded-xl hover:bg-[#026aa7] font-semibold transition text-sm flex items-center justify-center gap-2 shadow">
-                            <i class="fa-solid fa-floppy-disk"></i> Simpan Catatan Air
-                        </button>
-                    </form>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-slate-800">Daftar Pelanggan Terdaftar</h2>
-                        <button onclick="toggleModalPelanggan(true)" class="bg-slate-800 text-white text-xs px-3.5 py-2 rounded-xl hover:bg-slate-700 transition flex items-center gap-1.5 font-medium">
-                            <i class="fa-solid fa-user-plus"></i> Tambah Pelanggan
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-slate-100 text-slate-600 font-semibold border-b">
-                                    <th class="p-3">ID</th>
-                                    <th class="p-3">Nama</th>
-                                    <th class="p-3">RT/RW</th>
-                                    <th class="p-3">No. HP</th>
-                                    <th class="p-3">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-pelanggan-body">
-                                <tr><td colspan="5" class="p-4 text-center text-slate-400">Memuat data pelanggan...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 3: BENDAHARA -->
-        <section id="sec-bendahara" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-800">Tabel Tagihan Konsumen</h2>
-                        <p class="text-xs text-slate-500">Konfirmasi pembayaran dan kelola status tagihan bulanan.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <input type="month" id="filter-periode-bendahara" class="px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                        <button onclick="exportToExcel()" class="bg-emerald-600 text-white text-sm px-4 py-2 rounded-xl hover:bg-emerald-700 transition flex items-center gap-2 font-medium shadow">
-                            <i class="fa-solid fa-file-excel"></i> Export Excel
-                        </button>
-                        <button onclick="window.print()" class="bg-rose-600 text-white text-sm px-4 py-2 rounded-xl hover:bg-rose-700 transition flex items-center gap-2 font-medium shadow">
-                            <i class="fa-solid fa-file-pdf"></i> Cetak PDF
-                        </button>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table id="table-tagihan" class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
-                                <th class="p-3">Periode</th>
-                                <th class="p-3">ID & Nama</th>
-                                <th class="p-3">RT</th>
-                                <th class="p-3 text-right">Meter (L/K)</th>
-                                <th class="p-3 text-right">Pemakaian</th>
-                                <th class="p-3 text-right">Total (Rp)</th>
-                                <th class="p-3 text-center">Status</th>
-                                <th class="p-3 text-center no-print">Aksi Pembayaran</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-tagihan-body">
-                            <tr><td colspan="8" class="p-4 text-center text-slate-400">Memuat data tagihan...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 4: KETUA & SEKRETARIS -->
-        <section id="sec-laporan" class="tab-content hidden">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Penerimaan</p>
-                    <h3 id="stat-total-penerimaan" class="text-2xl font-extrabold text-[#0079bf] mt-1">Rp 0</h3>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Tunggakan</p>
-                    <h3 id="stat-total-tunggakan" class="text-2xl font-extrabold text-rose-500 mt-1">Rp 0</h3>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Pemakaian</p>
-                    <h3 id="stat-total-m3" class="text-2xl font-extrabold text-blue-600 mt-1">0 m³</h3>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Konsumen</p>
-                    <h3 id="stat-total-pelanggan" class="text-2xl font-extrabold text-slate-700 mt-1">0</h3>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800">Ringkasan Laporan Pengurus</h2>
-                        <p class="text-xs text-slate-500">Rekapitulasi data real-time dari Firestore.</p>
-                    </div>
-                    <button onclick="window.print()" class="bg-slate-800 text-white text-xs px-4 py-2.5 rounded-xl hover:bg-slate-900 transition flex items-center gap-2 font-medium">
-                        <i class="fa-solid fa-print"></i> Cetak Laporan Resmi
-                    </button>
-                </div>
-                <div id="rekap-container" class="space-y-4 text-sm">
-                    <p class="text-slate-500">Laporan realtime berdasarkan transaksi di Firestore.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 5: ADMIN (MANAJEMEN PENGURUS BARU) -->
-        <section id="sec-admin" class="tab-content hidden">
-            <div class="max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus text-[#0079bf]"></i> Tambah Akun Pengurus Baru
-                </h2>
-                <p class="text-slate-500 text-sm mb-6">Daftarkan akun untuk petugas, bendahara, sekretaris, atau ketua tanpa perlu menyentuh Firebase Console.</p>
-
-                <form id="form-tambah-user" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap & Jabatan</label>
-                        <input type="text" id="admin-nama" placeholder="Contoh: Bpk. Budi (Bendahara)" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#0079bf]">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Email Pengurus</label>
-                        <input type="email" id="admin-email" placeholder="bendahara@lamanda.desa" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#0079bf]">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Password Awal</label>
-                        <input type="password" id="admin-password" placeholder="Minimal 6 karakter" required minlength="6" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#0079bf]">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Hak Akses (Role)</label>
-                        <select id="admin-role" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#0079bf]">
-                            <option value="">-- Pilih Peran Pengurus --</option>
-                            <option value="petugas">Petugas Lapangan (Input Meteran)</option>
-                            <option value="bendahara">Bendahara (Kelola Tagihan & Pembayaran)</option>
-                            <option value="sekretaris">Sekretaris (Laporan & Monitoring)</option>
-                            <option value="ketua">Ketua (Laporan & Monitoring)</option>
-                            <option value="admin">Admin (Akses Penuh Manajemen Sistem)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full bg-[#0079bf] text-white py-3 rounded-xl hover:bg-[#026aa7] font-semibold transition text-sm shadow">
-                        <i class="fa-solid fa-user-check"></i> Daftarkan Akun Baru
-                    </button>
-                </form>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- MODAL LOGIN PENGURUS -->
-    <div id="modal-login" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
-            <div class="text-center">
-                <div class="bg-blue-50 text-[#0e6396] w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 text-xl">
-                    <i class="fa-solid fa-lock"></i>
-                </div>
-                <h3 class="text-lg font-bold text-slate-800">Login Pengurus PAMSIMAS</h3>
-                <p class="text-xs text-slate-500 mt-1">Masukkan akun resmi untuk masuk ke panel internal.</p>
-            </div>
-            
-            <form id="form-login" class="space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Email Pengurus</label>
-                    <input type="email" id="login-email" placeholder="admin@lamanda.desa" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#0079bf]">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
-                    <input type="password" id="login-password" placeholder="••••••••" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#0079bf]">
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="toggleModalLogin(false)" class="px-4 py-2 text-sm border border-slate-300 rounded-xl hover:bg-slate-100">Batal</button>
-                    <button type="submit" class="px-5 py-2 text-sm bg-[#0079bf] text-white rounded-xl hover:bg-[#026aa7] font-semibold shadow">Masuk</button>
-                </div>
-            </form>
-        </div>
+  <div class="tree" id="strukturContent">
+    <div class="level-1">
+      <div class="node yayasan">
+        <h3 contenteditable="true">Ketua Yayasan</h3>
+        <div class="name" contenteditable="true">Muhammad Nashir Basrah, S.Pd.I</div>
+      </div>
     </div>
 
-    <!-- Modal Tambah Pelanggan Baru -->
-    <div id="modal-pelanggan" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 class="text-lg font-bold text-slate-800 mb-4">Tambah Pelanggan PAMSIMAS</h3>
-            <form id="form-tambah-pelanggan" class="space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">ID Pelanggan</label>
-                    <input type="text" id="new-id-pelanggan" placeholder="Contoh: LMD-005" required class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap</label>
-                    <input type="text" id="new-nama" required class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">RT / RW</label>
-                    <input type="text" id="new-rt" placeholder="RT 01 / RW 01" required class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">No. Whatsapp / HP</label>
-                    <input type="tel" id="new-hp" placeholder="08123456789" class="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm">
-                </div>
-                <div class="flex justify-end gap-2 pt-3">
-                    <button type="button" onclick="toggleModalPelanggan(false)" class="px-4 py-2 text-sm border border-slate-300 rounded-xl hover:bg-slate-100">Batal</button>
-                    <button type="submit" class="px-4 py-2 text-sm bg-[#0079bf] text-white rounded-xl hover:bg-[#026aa7] font-medium">Simpan Data</button>
-                </div>
-            </form>
-        </div>
+    <div class="level-2">
+      <div class="node komite">
+        <h3 contenteditable="true">Ketua Komite Madrasah</h3>
+        <div class="name" contenteditable="true">Safaruddin, S.Pd</div>
+      </div>
+      <div class="node kepala">
+        <h3 contenteditable="true">Kepala Madrasah</h3>
+        <div class="name" contenteditable="true">Natsir, S.Pd.I</div>
+      </div>
     </div>
 
-    <!-- Main JavaScript Module -->
-    <script type="module" src="js/app.js"></script>
+    <div class="level-waka">
+      <div class="node wakil">
+        <h3 contenteditable="true">Waka.Ur.Kurikulum</h3>
+        <div class="name" contenteditable="true">Marwah, S.Pd.I</div>
+      </div>
+      <div class="node wakil">
+        <h3 contenteditable="true">Waka.Ur.Sapras</h3>
+        <div class="name" contenteditable="true">Ahmad Mudatsir, S.Pd</div>
+      </div>
+      <div class="node wakil">
+        <h3 contenteditable="true">Waka.Ur.Kesiswaan</h3>
+        <div class="name" contenteditable="true">Jamil Rahmat, S.Pd</div>
+      </div>
+      <div class="node wakil">
+        <h3 contenteditable="true">Waka.Ur.Humas</h3>
+        <div class="name" contenteditable="true">Syahban Nur, S.Sos</div>
+      </div>
+    </div>
+
+    <div class="level-3-nodes">
+      <div class="node perpustakaan">
+        <h3 contenteditable="true">Kepala Perpustakaan</h3>
+        <div class="name" contenteditable="true">Marwah, S.Pd.I</div>
+      </div>
+      <div class="node bendahara">
+        <h3 contenteditable="true">Bendahara Madrasah</h3>
+        <div class="name" contenteditable="true">Nursyam, S.Pd</div>
+      </div>
+    </div>
+
+    <div class="level-3">
+      <div class="group wali-kelas">
+        <h4 contenteditable="true">Wali Kelas</h4>
+        <div class="items">
+          <div class="list-item">Kelas X : <span contenteditable="true">Atikah, S.Pd.I</span></div>
+          <div class="list-item">Kelas XI : <span contenteditable="true">Sumarni, S.E</span></div>
+          <div class="list-item">Kelas XII : <span contenteditable="true">Irmayani, S.Pd</span></div>
+        </div>
+      </div>
+
+      <div class="group dewan-guru">
+        <h4 contenteditable="true">Dewan Guru dan Pendidik</h4>
+        <div class="items grid">
+          <div class="list-item">1. <span contenteditable="true">Ahmad Mudatsir, S.Pd</span></div>
+          <div class="list-item">6. <span contenteditable="true">Wahda Nurismi, S.Pd</span></div>
+          <div class="list-item">2. <span contenteditable="true">Khaerul, S.Ag</span></div>
+          <div class="list-item">7. <span contenteditable="true">Marhani, S.Pd</span></div>
+          <div class="list-item">3. <span contenteditable="true">Elis Harianto, S.Pd</span></div>
+          <div class="list-item">8. <span contenteditable="true">Haerani, S.Pd.I</span></div>
+          <div class="list-item">4. <span contenteditable="true">Niar, S.Pd</span></div>
+          <div class="list-item">9. <span contenteditable="true">Hj. Murniati Mahdi, S.Pd.I</span></div>
+          <div class="list-item">5. <span contenteditable="true">Muniratul Asri, S.Pd</span></div>
+          <div class="list-item">10. <span contenteditable="true">Risna Sari, S.Pd</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+ </div>
+</div>
+
+<div class="hint no-print">
+  💡 <strong>Tips:</strong> Klik langsung pada nama atau jabatan untuk mengedit.
+  Gunakan tombol di atas untuk menyimpan sebagai <strong>PDF</strong> atau <strong>Word</strong>.
+</div>
+
+<script>
+/* Pratinjau di layar diperkecil agar muat, tampilan cetak tetap ukuran asli */
+function fitSheet() {
+  const s = document.getElementById('sheet');
+  s.style.zoom = 1;
+  s.style.zoom = Math.min(1, (window.innerWidth - 24) / s.offsetWidth);
+}
+window.addEventListener('load', fitSheet);
+window.addEventListener('resize', fitSheet);
+window.addEventListener('beforeprint', () => { document.getElementById('sheet').style.zoom = 1; });
+window.addEventListener('afterprint', fitSheet);
+
+function downloadWord() {
+  const kopHTML = document.querySelector('.kop-container').outerHTML;
+  const strukturHTML = document.getElementById('strukturContent').outerHTML;
+  const wordContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset="utf-8"><title>Struktur Organisasi MA Hasyim Asy’ari</title>
+    <style>@page { size: A4 landscape; margin: 1cm; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: white; padding: 20px; }
+    .kop-container { display: inline-block; margin: 0 auto 30px auto; border-radius: 12px; overflow: hidden; text-align: center; width: 100%; }
+    .kop-line-1 { background-color: #1e40af; padding: 18px 40px; color: white; }
+    .kop-line-1 h1 { color: white; font-size: 26px; font-weight: 700; letter-spacing: 2px; margin: 0; }
+    .kop-line-2 { background-color: #059669; padding: 14px 40px; color: white; }
+    .kop-line-2 h2 { color: white; font-size: 18px; font-weight: 600; letter-spacing: 1px; margin: 0; }
+    .tree { display: flex; flex-direction: column; align-items: center; gap: 25px; max-width: 1100px; margin: 0 auto; }
+    .node { border-radius: 10px; padding: 12px 20px; min-width: 200px; border: 3px solid; display: inline-block; margin: 5px; }
+    .node h3 { margin: 0 0 6px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .node .name { font-size: 15px; font-weight: 700; }
+    .node.yayasan { background-color: #1e40af; border-color: #1e3a8a; color: white; }
+    .node.yayasan h3 { color: #bfdbfe; } .node.yayasan .name { color: white; }
+    .node.komite { background-color: #059669; border-color: #047857; color: white; }
+    .node.komite h3 { color: #a7f3d0; } .node.komite .name { color: white; }
+    .node.kepala { background-color: #0891b2; border-color: #0e7490; color: white; }
+    .node.kepala h3 { color: #cffafe; } .node.kepala .name { color: white; }
+    .node.wakil { background-color: #06b6d4; border-color: #0891b2; color: white; }
+    .node.wakil h3 { color: #cffafe; } .node.wakil .name { color: white; }
+    .node.perpustakaan { background-color: #8b5cf6; border-color: #7c3aed; color: white; }
+    .node.perpustakaan h3 { color: #ddd6fe; } .node.perpustakaan .name { color: white; }
+    .node.bendahara { background-color: #f59e0b; border-color: #d97706; color: white; }
+    .node.bendahara h3 { color: #fef3c7; } .node.bendahara .name { color: white; }
+    .level-2, .level-waka, .level-3-nodes, .level-3 { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+    .group { border-radius: 10px; padding: 20px; border: 3px solid; flex: 1; min-width: 300px; }
+    .group.wali-kelas { background-color: #ecfdf5; border-color: #10b981; }
+    .group.wali-kelas h4 { color: #047857; border-bottom: 3px solid #10b981; }
+    .group.dewan-guru { background-color: #eff6ff; border-color: #3b82f6; }
+    .group.dewan-guru h4 { color: #1e40af; border-bottom: 3px solid #3b82f6; }
+    .group h4 { margin: 0 0 15px 0; font-size: 16px; font-weight: 700; padding-bottom: 8px; display: block; }
+    .list-item { background: white; padding: 8px 12px; margin: 8px 0; border-radius: 6px; border-left: 4px solid; text-align: left; font-size: 14px; }
+    .group.wali-kelas .list-item { border-left-color: #10b981; }
+    .group.dewan-guru .list-item { border-left-color: #3b82f6; }
+    .list-item span { font-weight: 600; color: #0f172a; }</style></head>
+    <body>${kopHTML}${strukturHTML}</body></html>`;
+  const blob = new Blob(['\ufeff', wordContent], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = 'Struktur_Organisasi_MA_Hasyim_Asyari.doc';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  alert('✅ File Word berhasil didownload!');
+}
+
+function downloadPDF() {
+  alert('💡 Dialog print akan terbuka.\n\nPastikan:\n• Paper size: A4\n• Layout: Landscape\n• Margins: None / Tidak ada (margin 10mm sudah diatur di halaman)\n• Scale: 100% (Default)\n• Centang "Background graphics"\n• Destination: Save as PDF');
+  setTimeout(() => window.print(), 500);
+}
+</script>
 </body>
 </html>
