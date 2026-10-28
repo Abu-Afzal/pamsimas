@@ -22,8 +22,9 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:#e2e8
 .kop-logo { position:absolute; top:50%; transform:translateY(-50%); height:23mm; width:auto; z-index:2; }
 .kop-logo.kiri { left:5mm; }
 .kop-logo.kanan { right:5mm; }
-.kop-line-1 { background:linear-gradient(135deg,#1e40af 0%,#0891b2 100%); padding:3.5mm 10mm; }
+.kop-line-1 { background:linear-gradient(135deg,#1e40af 0%,#0891b2 100%); padding:2.5mm 10mm; }
 .kop-line-1 h1 { color:#fff; font-size:25pt; font-weight:700; letter-spacing:2px; margin:0; white-space:nowrap; }
+.kop-line-1 .kop-tahun { color:#fff; font-size:14pt; font-weight:600; letter-spacing:2px; margin:0.5mm 0 0; outline:none; }
 .kop-line-2 { background:linear-gradient(135deg,#059669 0%,#10b981 100%); padding:2.5mm 10mm; }
 .kop-line-2 h2 { color:#fff; font-size:17pt; font-weight:600; letter-spacing:1px; margin:0; white-space:nowrap; }
 
@@ -59,8 +60,9 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:#e2e8
 
 .items { flex:1; min-height:0; display:flex; flex-direction:column; gap:2.5mm; }
 .items.grid { display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:2.5mm 4mm; }
-.list-item { flex:1; display:flex; align-items:center; gap:1.5mm; background:#fff; padding:0 3mm; border-radius:2mm; border-left:1.5mm solid; text-align:left; font-size:13pt; }
-.wali-kelas .list-item { border-left-color:#10b981; font-size:15pt; }
+.items > .list-item { min-width:0; line-height:1.15; }
+.list-item { flex:1; display:flex; align-items:center; gap:1.5mm; background:#fff; padding:0 3mm; border-radius:2mm; border-left:1.5mm solid; text-align:left; font-size:var(--fs,13pt); }
+.wali-kelas .list-item { border-left-color:#10b981; font-size:var(--fs,15pt); }
 .dewan-guru .list-item { border-left-color:#3b82f6; }
 .list-item span { font-weight:600; color:#0f172a; outline:none; }
 
@@ -89,7 +91,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:#e2e8
   <div class="kop-container">
     <img class="kop-logo kiri" alt="Logo Kemenag" src="logo/logo-kemenag.png">
     <img class="kop-logo kanan" alt="Logo MA Hasyim Asy’ari" src="logo/logo-ma.png">
-    <div class="kop-line-1"><h1 contenteditable="true">STRUKTUR ORGANISASI MA HASYIM ASY’ARI</h1></div>
+    <div class="kop-line-1"><h1 contenteditable="true">STRUKTUR ORGANISASI MA HASYIM ASY’ARI</h1><p class="kop-tahun" contenteditable="true">TAHUN AJARAN 2026/2027</p></div>
     <div class="kop-line-2"><h2 contenteditable="true">YAYASAN AL-HUFFADH BUTTA TOA</h2></div>
   </div>
 
@@ -244,6 +246,26 @@ function downloadPDF() {
   alert('💡 Dialog print akan terbuka.\n\nPastikan:\n• Paper size: A4\n• Layout: Landscape\n• Margins: None / Tidak ada (margin 10mm sudah diatur di halaman)\n• Scale: 100% (Default)\n• Centang "Background graphics"\n• Destination: Save as PDF');
   setTimeout(() => window.print(), 500);
 }
+</script>
+<script>
+/* Auto-fit: jika nama ditambah, ukuran huruf mengecil otomatis agar tetap di dalam kotak */
+function fitItems() {
+  document.querySelectorAll('.items').forEach(function (box) {
+    var fs = box.classList.contains('grid') ? 13 : 15;
+    box.style.setProperty('--fs', fs + 'pt');
+    while (fs > 7 && (box.scrollHeight > box.clientHeight + 1 || box.scrollWidth > box.clientWidth + 1)) {
+      fs -= 0.5;
+      box.style.setProperty('--fs', fs + 'pt');
+    }
+  });
+}
+var fitTimer;
+function fitSoon() { clearTimeout(fitTimer); fitTimer = setTimeout(fitItems, 120); }
+window.addEventListener('load', fitItems);
+window.addEventListener('beforeprint', fitItems);
+window.addEventListener('afterprint', fitItems);
+document.addEventListener('input', fitSoon);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitItems);
 </script>
 </body>
 </html>
